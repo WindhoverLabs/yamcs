@@ -1,32 +1,7 @@
 #Configuration tested on YAMCS 5.4.0
 services:
   - class: org.yamcs.archive.XtceTmRecorder
-  - class: org.yamcs.archive.ParameterRecorder
-  - class: org.yamcs.parameter.SystemParametersService
-    args:
-      provideJvmVariables: true
-      provideFsVariables: true
-  - class: org.yamcs.ProcessorCreatorService
-    args:
-      name: realtime
-      type: realtime
-  - class: org.yamcs.archive.CommandHistoryRecorder
-  - class: org.yamcs.parameterarchive.ParameterArchive
-    args:
-      realtimeFiller:
-        enabled: false
-      backFiller:
-        enabled: true
-        warmupTime: 60
-
 dataLinks:
-  - name: tm_realtime
-    class: org.yamcs.tctm.UdpTmDataLink
-    stream: tm_realtime
-    port: 5011
-    maxLength: 32768 #32KB is the default for CCSDS
-    packetPreprocessorClassName: org.yamcs.tctm.cfs.CfsPacketPreprocessor
-
   - name: tc_realtime
     class: org.yamcs.tctm.UdpTcDataLink
     stream: tc_realtime
@@ -45,8 +20,4 @@ mdb:
 streamConfig:
   tm:
     - name: "tm_realtime"
-    - name: "tc_realtime1"
-  cmdHist: ["cmdhist_realtime", "cmdhist_dump"]
-  event: ["events_realtime", "events_dump"]
-  param: ["pp_realtime", "sys_param", "proc_param"]
   tc: ["tc_realtime"]
