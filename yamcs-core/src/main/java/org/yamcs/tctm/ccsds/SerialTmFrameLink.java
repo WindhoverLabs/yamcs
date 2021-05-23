@@ -55,8 +55,6 @@ public class SerialTmFrameLink extends AbstractTmFrameLink implements Runnable {
     public void init(String instance, String name, YConfiguration config) throws ConfigurationException {
         super.init(instance, name, config);
         
-        int maxLength = frameHandler.getMaxFrameSize();
-        
         this.deviceName = config.getString("device", "/dev/ttyUSB0");
         this.syncSymbol = config.getString("syncSymbol", "");
         this.baudRate = config.getInt("baudRate", 57600);
@@ -131,32 +129,26 @@ public class SerialTmFrameLink extends AbstractTmFrameLink implements Runnable {
         
         while (isRunningAndEnabled()) {
             try {                
-	        	byte[] packet = packetInputStream.readPacket();         
-
-        	    log.info("### " + StringConverter.arrayToHexString(packet, 0, packet.length, true));       	       
-
+	        	byte[] packet = packetInputStream.readPacket();  
+        	    
                 int length = packet.length;
                 if (log.isTraceEnabled()) {
                     log.trace("Received packet of length {}: {}", length, StringConverter
                             .arrayToHexString(packet, 0, length, true));
                 }
                 if (length < frameHandler.getMinFrameSize()) {
-                	log.info("### 1   length=" + length + "   " + frameHandler.getMinFrameSize());
                     eventProducer.sendWarning("Error processing frame: size " + length
                             + " shorter than minimum allowed " + frameHandler.getMinFrameSize());
                     continue;
                 }
                 if (length > frameHandler.getMaxFrameSize()) {
-                	log.info("### 2   length=" + length + "   " + frameHandler.getMaxFrameSize());
                     eventProducer.sendWarning("Error processing frame: size " + length + " longer than maximum allowed "
                             + frameHandler.getMaxFrameSize());
                     continue;
                 }
                 frameCount.getAndIncrement();
 
-            	log.info("### 3  " + length);
-                frameHandler.handleFrame(timeService.getHresMissionTime(), packet, 0,
-                        length);
+                frameHandler.handleFrame(timeService.getHresMissionTime(), packet, 0, length);
             } catch (TcTmException e) {
                 eventProducer.sendWarning("Error processing frame: " + e.toString());
             } catch (Exception e) {
