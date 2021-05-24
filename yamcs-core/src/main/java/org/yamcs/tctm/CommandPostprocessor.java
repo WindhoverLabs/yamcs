@@ -43,6 +43,7 @@ public interface CommandPostprocessor {
      * @return the size of the binary packet which the method {@link #process(PreparedCommand)} will return.
      */
     default int getBinaryLength(PreparedCommand pc) {
+//        System.out.println
         return pc.getBinary().length;
     }
 

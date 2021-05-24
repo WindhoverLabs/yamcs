@@ -98,7 +98,7 @@ public class FrameStreamHelper {
         if(offset==0 && length == data.length) {
             return data;
         } else {
-            return Arrays.copyOfRange(data, offset, offset+length);
+            return Arrays.copyOfRange(data, offset, offset+length+1);
         }
     }
 }

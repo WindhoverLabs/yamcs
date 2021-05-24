@@ -71,17 +71,25 @@ public class MasterChannelFrameMultiplexer {
         while (!quitting) {
             TcTransferFrame tf = null;
             if (tcManagedParameters.priorityScheme == PriorityScheme.ABSOLUTE) {
+                System.out.println("getFrame1");
                 tf = getFrameAbsolutePriority();
+                System.out.println("getFrame2");
             } else if (tcManagedParameters.priorityScheme == PriorityScheme.FIFO) {
+                System.out.println("getFrame3");
                 tf = getFrameFifo();
+                System.out.println("getFrame4");
             } else {
+                System.out.println("getFrame5");
                 tf = getFramePollingVector();
+                System.out.println("getFrame6");
             }
             if (tf != null) {
                 return tf;
             }
             try {
+                System.out.println("getFrame7");
                 dataAvailableSemaphore.acquire();
+                System.out.println("getFrame8");
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return null;

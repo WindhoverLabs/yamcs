@@ -24,6 +24,7 @@ public class ParameterWithId {
         this.p = p;
         this.id = id;
         this.path = path;
+        System.out.println("path--->:" + path);
     }
 
     public NamedObjectId getId() {

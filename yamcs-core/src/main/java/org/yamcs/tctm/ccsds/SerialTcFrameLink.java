@@ -1,33 +1,24 @@
 package org.yamcs.tctm.ccsds;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.SocketException;
+import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.yamcs.ConfigurationException;
 import org.yamcs.YConfiguration;
-import org.yamcs.tctm.TcTmException;
-import org.yamcs.tctm.Link.Status;
 import org.yamcs.utils.StringConverter;
-import org.openmuc.jrxtx.DataBits;
 import org.openmuc.jrxtx.SerialPort;
 import org.openmuc.jrxtx.SerialPortBuilder;
-import org.yamcs.tctm.PacketInputStream;
-import org.yamcs.TmPacket;
-import org.yamcs.tctm.CcsdsPacketInputStream;
-import org.yamcs.tctm.PacketInputStream;
-import org.yamcs.tctm.PacketTooLongException;
-import java.io.IOException;
-import org.yamcs.utils.YObjectLoader;
 import org.yamcs.commanding.PreparedCommand;
 
+import com.google.common.primitives.Bytes;
 import com.google.common.util.concurrent.RateLimiter;
 
-
 /**
- * Receives telemetry fames via serial interface. 
+ * Receives telemetry fames via serial interface.
  * 
  * 
  * @author Mathew Benson (mbenson@windhoverlabs.com)
@@ -35,18 +26,20 @@ import com.google.common.util.concurrent.RateLimiter;
  */
 public class SerialTcFrameLink extends AbstractTcFrameLink implements Runnable {
     RateLimiter rateLimiter;
-    protected String   deviceName;
-    protected String   syncSymbol;
-    protected int      baudRate;
-    protected int      dataBits;
-    protected String   stopBits;
-    protected String   parity;
-    protected String   flowControl;
-    protected long     initialDelay;
+    protected String deviceName;
+    protected String syncSymbol;
+    protected int baudRate;
+    protected int dataBits;
+    protected String stopBits;
+    protected String parity;
+    protected String flowControl;
+    protected long initialDelay;
 
-    SerialPort         serialPort = null;
-    Thread             thread;
-    
+    Map<Integer, TcTransferFrame> pendingFrames = new ConcurrentHashMap<>();
+
+    SerialPort serialPort = null;
+    Thread thread;
+
     /**
      * Creates a new Serial Frame Data Link
      * 
@@ -68,50 +61,110 @@ public class SerialTcFrameLink extends AbstractTcFrameLink implements Runnable {
         this.stopBits = config.getString("stopBits", "1");
         this.parity = config.getString("parity", "NONE");
         this.flowControl = config.getString("flowControl", "NONE");
-        
-        if(this.parity != "NONE" && this.parity != "EVEN" && this.parity != "ODD" && this.parity != "MARK" && this.parity != "SPACE") {
-        	throw new ConfigurationException("Invalid Parity (NONE, EVEN, ODD, MARK or SPACE)");
+
+        if (this.parity != "NONE" && this.parity != "EVEN" && this.parity != "ODD" && this.parity != "MARK"
+                && this.parity != "SPACE") {
+            throw new ConfigurationException("Invalid Parity (NONE, EVEN, ODD, MARK or SPACE)");
         }
-        
-        if(this.flowControl != "NONE" && this.flowControl != "RTS_CTS" && this.flowControl != "XON_XOFF") {
-        	throw new ConfigurationException("Invalid Flow Control (NONE, RTS_CTS, or XON_XOFF)");
+
+        if (this.flowControl != "NONE" && this.flowControl != "RTS_CTS" && this.flowControl != "XON_XOFF") {
+            throw new ConfigurationException("Invalid Flow Control (NONE, RTS_CTS, or XON_XOFF)");
         }
-        
-        if(this.dataBits != 5 && this.dataBits != 6 && this.dataBits != 7 && this.dataBits != 8) {
-        	throw new ConfigurationException("Invalid Data Bits (5, 6, 7, or 8)");
+
+        if (this.dataBits != 5 && this.dataBits != 6 && this.dataBits != 7 && this.dataBits != 8) {
+            throw new ConfigurationException("Invalid Data Bits (5, 6, 7, or 8)");
         }
-        
-        if(this.stopBits != "1" && this.stopBits != "1.5" && this.stopBits != "2") {
-        	throw new ConfigurationException("Invalid Stop Bits (1, 1.5, or 2)");
+
+        if (this.stopBits != "1" && this.stopBits != "1.5" && this.stopBits != "2") {
+            throw new ConfigurationException("Invalid Stop Bits (1, 1.5, or 2)");
         }
     }
-    
-    
+
     @Override
     public void run() {
         while (isRunningAndEnabled()) {
+            System.out.println("run");
             if (rateLimiter != null) {
                 rateLimiter.acquire();
             }
+            System.out.println("run2");
             TcTransferFrame tf = multiplexer.getFrame();
+            System.out.println("run3");
+
             if (tf != null) {
+                System.out.println("run4");
+
                 byte[] data = tf.getData();
                 if (log.isTraceEnabled()) {
                     log.trace("Outgoing frame data: {}", StringConverter.arrayToHexString(data, true));
                 }
 
                 if (cltuGenerator != null) {
+                    System.out.println("$$makeCltu$$");
+                    System.out.println("before:"+ StringConverter.arrayToHexString(data));
                     data = cltuGenerator.makeCltu(data);
+                    System.out.println("after:"+ StringConverter.arrayToHexString(data));
                     if (log.isTraceEnabled()) {
                         log.trace("Outgoing CLTU: {}", StringConverter.arrayToHexString(data, true));
                     }
                 }
 
                 if (tf.isBypass()) {
+                    System.out.println("tf.isBypass():" + tf.isBypass());
                     ackBypassFrame(tf);
                 }
 
+                OutputStream outStream = null;
+                try {
+                    outStream = serialPort.getOutputStream();
+                } catch (IOException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                }
+                try {
+                    System.out.println("cltuStart Token:" + getConfig().getString("cltuStartSequence"));
+                    byte[] beginSyncSymbol = getConfig().getString("cltuStartSequence").getBytes();
+//                    beginSyncSymbol[0] = (byte) 0xEB;
+//                    beginSyncSymbol[1] = (byte) 0x90;
+                    
+                    System.out.println("cltuTail Token:" + getConfig().getString("cltuTailSequence"));
+
+
+                    byte[] endSyncSymbol = getConfig().getString("cltuTailSequence").getBytes();
+//                        { (byte) 0xc5, (byte) 0xc5, (byte) 0xc5, (byte) 0xc5, (byte) 0xc5,
+//                            (byte) 0xc5, (byte) 0xc5, (byte) 0x79 };
+//                    getConfig().get("cltuStartSequence");
+
+//                    byte[] commandBinary = Bytes.concat(beginSyncSymbol, data, endSyncSymbol);
+                    
+                    System.out.println("beginSyncSymbol:" + StringConverter.arrayToHexString(beginSyncSymbol));
+                    System.out.println("endSyncSymbol:" + StringConverter.arrayToHexString(endSyncSymbol));
+
+                    
+                    System.out.println(StringConverter.arrayToHexString(data));
+
+                    // outStream.write(beginSyncSymbol);
+                    // outStream.write(binary);
+
+                    System.out.println("isRunningAndEnabled");
+                    outStream.write(data);
+
+                    // commandHistoryPublisher.publishAck(pc.getCommandId(), "$$Sent$$", getCurrentTime(),
+                    // CommandHistoryPublisher.AckStatus.OK);
+
+                    // if (sent) {
+                    // ackCommand(pc.getCommandId());
+                    // } else {
+                    // failedCommand(pc.getCommandId(), reason);
+                    // }
+
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
                 frameCount++;
+                System.out.println("run5");
+
             }
         }
     }
@@ -125,7 +178,7 @@ public class SerialTcFrameLink extends AbstractTcFrameLink implements Runnable {
         if (serialPort != null) {
             try {
                 log.info("Closing {}", deviceName);
-            	serialPort.close();
+                serialPort.close();
             } catch (IOException e) {
                 log.warn("Exception raised closing the serial port:", e);
             }
@@ -135,10 +188,10 @@ public class SerialTcFrameLink extends AbstractTcFrameLink implements Runnable {
 
     @Override
     protected void doEnable() throws Exception {
-    	if (serialPort == null) {
-    		openDevice();
+        if (serialPort == null) {
+            openDevice();
             log.info("Listening on {}", deviceName);
-    	}
+        }
         thread = new Thread(this);
         thread.start();
     }
@@ -148,11 +201,11 @@ public class SerialTcFrameLink extends AbstractTcFrameLink implements Runnable {
         try {
             if (!isDisabled()) {
                 if (serialPort == null) {
-                	openDevice();
+                    openDevice();
                     log.info("Bound to {}", deviceName);
                 }
             }
-            
+
             doEnable();
             notifyStarted();
         } catch (Exception e) {
@@ -167,13 +220,13 @@ public class SerialTcFrameLink extends AbstractTcFrameLink implements Runnable {
             if (serialPort != null) {
                 try {
                     log.info("Closing {}", deviceName);
-                	serialPort.close();
+                    serialPort.close();
                 } catch (IOException e) {
                     log.warn("Exception raised closing the serial port:", e);
                 }
                 serialPort = null;
             }
-            
+
             doDisable();
             multiplexer.quit();
             notifyStopped();
@@ -188,93 +241,93 @@ public class SerialTcFrameLink extends AbstractTcFrameLink implements Runnable {
         return (serialPort == null) ? Status.DISABLED : Status.OK;
     }
 
-    
     protected void openDevice() {
-    	try {
-	        serialPort = SerialPortBuilder.newBuilder(deviceName).setBaudRate(baudRate).build();
-	        
-	        switch(this.flowControl) {
-	            case "NONE":
-	                serialPort.setFlowControl(org.openmuc.jrxtx.FlowControl.NONE);
-	                break;
-	
-	            case "RTS_CTS":
-	                serialPort.setFlowControl(org.openmuc.jrxtx.FlowControl.RTS_CTS);
-	                break;
-	
-	            case "XON_XOFF":
-	                serialPort.setFlowControl(org.openmuc.jrxtx.FlowControl.XON_XOFF);
-	                break;
-	        }
-	        
-	        switch(this.parity) {
-	            case "NONE":
-	                serialPort.setParity(org.openmuc.jrxtx.Parity.NONE);
-	                break;
-	                
-	            case "ODD":
-	                serialPort.setParity(org.openmuc.jrxtx.Parity.ODD);
-	                break;
-	                
-	            case "EVEN":
-	                serialPort.setParity(org.openmuc.jrxtx.Parity.EVEN);
-	                break;
-	                
-	            case "MARK":
-	                serialPort.setParity(org.openmuc.jrxtx.Parity.MARK);
-	                break;
-	                
-	            case "SPACE":
-	                serialPort.setParity(org.openmuc.jrxtx.Parity.SPACE);
-	                break;
-	            	
-	        }
-	
-	        switch(this.dataBits) {
-	            case 5:
-	                serialPort.setDataBits(org.openmuc.jrxtx.DataBits.DATABITS_5);
-	                break;
-	
-	            case 6:
-	                serialPort.setDataBits(org.openmuc.jrxtx.DataBits.DATABITS_6);
-	                break;
-	
-	            case 7:
-	                serialPort.setDataBits(org.openmuc.jrxtx.DataBits.DATABITS_7);
-	                break;
-	
-	            case 8:
-	                serialPort.setDataBits(org.openmuc.jrxtx.DataBits.DATABITS_8);
-	                break;
-	        }
-	
-	        switch(this.stopBits) {
-	            case "1":
-	                serialPort.setStopBits(org.openmuc.jrxtx.StopBits.STOPBITS_1);
-	                break;
-	
-	            case "1.5":
-	                serialPort.setStopBits(org.openmuc.jrxtx.StopBits.STOPBITS_1_5);
-	                break;
-	
-	            case "2":
-	                serialPort.setStopBits(org.openmuc.jrxtx.StopBits.STOPBITS_2);
-	                break;
-	        }
-	        
-//	        try {
-//	            packetInputStream = YObjectLoader.loadObject(packetInputStreamClassName);
-//	        } catch (ConfigurationException e) {
-//	            log.error("Cannot instantiate the packetInput stream", e);
-//	            throw e;
-//	        }
-//	        packetInputStream.init(serialPort.getInputStream(), packetInputStreamArgs);
+        try {
+            serialPort = SerialPortBuilder.newBuilder(deviceName).setBaudRate(baudRate).build();
+
+            switch (this.flowControl) {
+            case "NONE":
+                serialPort.setFlowControl(org.openmuc.jrxtx.FlowControl.NONE);
+                break;
+
+            case "RTS_CTS":
+                serialPort.setFlowControl(org.openmuc.jrxtx.FlowControl.RTS_CTS);
+                break;
+
+            case "XON_XOFF":
+                serialPort.setFlowControl(org.openmuc.jrxtx.FlowControl.XON_XOFF);
+                break;
+            }
+
+            switch (this.parity) {
+            case "NONE":
+                serialPort.setParity(org.openmuc.jrxtx.Parity.NONE);
+                break;
+
+            case "ODD":
+                serialPort.setParity(org.openmuc.jrxtx.Parity.ODD);
+                break;
+
+            case "EVEN":
+                serialPort.setParity(org.openmuc.jrxtx.Parity.EVEN);
+                break;
+
+            case "MARK":
+                serialPort.setParity(org.openmuc.jrxtx.Parity.MARK);
+                break;
+
+            case "SPACE":
+                serialPort.setParity(org.openmuc.jrxtx.Parity.SPACE);
+                break;
+
+            }
+
+            switch (this.dataBits) {
+            case 5:
+                serialPort.setDataBits(org.openmuc.jrxtx.DataBits.DATABITS_5);
+                break;
+
+            case 6:
+                serialPort.setDataBits(org.openmuc.jrxtx.DataBits.DATABITS_6);
+                break;
+
+            case 7:
+                serialPort.setDataBits(org.openmuc.jrxtx.DataBits.DATABITS_7);
+                break;
+
+            case 8:
+                serialPort.setDataBits(org.openmuc.jrxtx.DataBits.DATABITS_8);
+                break;
+            }
+
+            switch (this.stopBits) {
+            case "1":
+                serialPort.setStopBits(org.openmuc.jrxtx.StopBits.STOPBITS_1);
+                break;
+
+            case "1.5":
+                serialPort.setStopBits(org.openmuc.jrxtx.StopBits.STOPBITS_1_5);
+                break;
+
+            case "2":
+                serialPort.setStopBits(org.openmuc.jrxtx.StopBits.STOPBITS_2);
+                break;
+            }
+
+            // try {
+            // packetInputStream = YObjectLoader.loadObject(packetInputStreamClassName);
+            // } catch (ConfigurationException e) {
+            // log.error("Cannot instantiate the packetInput stream", e);
+            // throw e;
+            // }
+            // packetInputStream.init(serialPort.getInputStream(), packetInputStreamArgs);
         } catch (IOException e) {
             if (isRunningAndEnabled()) {
-                log.info("Cannot open or read serial device {}::{}:{}'. Retrying in 10s", deviceName, e.getMessage(), e.toString());
+                log.info("Cannot open or read serial device {}::{}:{}'. Retrying in 10s", deviceName, e.getMessage(),
+                        e.toString());
             }
             try {
-            	serialPort.close();
+                serialPort.close();
             } catch (Exception e2) {
             }
             serialPort = null;
@@ -291,13 +344,103 @@ public class SerialTcFrameLink extends AbstractTcFrameLink implements Runnable {
             }
         }
     }
-    
+
     @Override
-    public void sendTc(PreparedCommand preparedCommand) {
-        throw new ConfigurationException(
-                "Blah blah blah");
+    public void sendTc(PreparedCommand pc) {
+        byte[] binary = pc.getBinary();
+        if (binary == null) {
+            log.warn("command postprocessor did not process the command");
+            return;
+        }
+
+        int retries = 5;
+        boolean sent = false;
+
+        OutputStream outStream = null;
+        try {
+            outStream = serialPort.getOutputStream();
+        } catch (IOException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+        // try {
+        byte[] beginSyncSymbol = new byte[2];
+        beginSyncSymbol[0] = (byte) 0xEB;
+        beginSyncSymbol[1] = (byte) 0x90;
+
+        byte[] endSyncSymbol = { (byte) 0xc5, (byte) 0xc5, (byte) 0xc5, (byte) 0xc5, (byte) 0xc5, (byte) 0xc5,
+                (byte) 0xc5, (byte) 0x79 };
+
+        byte[] commandBinary = Bytes.concat(beginSyncSymbol, binary, endSyncSymbol);
+
+        System.out.println("sendTc");
+
+        pendingFrames.put(0, new TcTransferFrame(commandBinary, 66, 0));
+
+        // System.out.println(StringConverter.arrayToHexString(commandBinary));
+
+        // outStream.write(beginSyncSymbol);
+        // outStream.write(binary);
+
+        // outStream.write(commandBinary);
+
+        // commandHistoryPublisher.publishAck(pc.getCommandId(), "$$Sent$$", getCurrentTime(),
+        // CommandHistoryPublisher.AckStatus.OK);
+
+        // if (sent) {
+        // ackCommand(pc.getCommandId());
+        // } else {
+        // failedCommand(pc.getCommandId(), reason);
+        // }
+
+        // } catch (IOException e) {
+        // // TODO Auto-generated catch block
+        // e.printStackTrace();
+        // }
+
+        // ByteBuffer bb = ByteBuffer.wrap(binary);
+        // bb.rewind();
+        // String reason = null;
+        // while (!sent && (retries > 0)) {
+        // try {
+        // if(serialPort == null) {
+        // openDevice();
+        // }
+        //
+        // outputStream = serialPort.get
+        //
+        // WritableByteChannel channel = Channels.newChannel(outputStream);
+        // channel.write(bb);
+        // dataCount.getAndIncrement();
+        // sent = true;
+        // } catch (IOException e) {
+        // reason = String.format("Error writing to TC device to %s : %s", deviceName, e.getMessage());
+        // log.warn(reason);
+        // try {
+        // if (serialPort != null) {
+        // serialPort.close();
+        // }
+        // serialPort = null;
+        // } catch (IOException e1) {
+        // e1.printStackTrace();
+        // }
+        // }
+        // retries--;
+        // if (!sent && (retries > 0)) {
+        // try {
+        // log.warn("Command not sent, retrying in 2 seconds");
+        // Thread.sleep(2000);
+        // } catch (InterruptedException e) {
+        // log.warn("exception {} thrown when sleeping 2 sec", e.toString());
+        // Thread.currentThread().interrupt();
+        // }
+        // }
+        // }
+        // if (sent) {
+        // ackCommand(pc.getCommandId());
+        // } else {
+        // failedCommand(pc.getCommandId(), reason);
+        // }
+        // }
     }
 }
-
-
-
