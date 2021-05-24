@@ -8,6 +8,7 @@ import java.net.SocketException;
 import org.yamcs.ConfigurationException;
 import org.yamcs.YConfiguration;
 import org.yamcs.tctm.TcTmException;
+import org.yamcs.tctm.Link.Status;
 import org.yamcs.utils.StringConverter;
 import org.openmuc.jrxtx.DataBits;
 import org.openmuc.jrxtx.SerialPort;
@@ -29,8 +30,6 @@ import org.yamcs.utils.YObjectLoader;
  *
  */
 public class SerialTmFrameLink extends AbstractTmFrameLink implements Runnable {
-    private volatile int invalidDatagramCount = 0;
-    
     protected String   deviceName;
     protected String   syncSymbol;
     protected int      baudRate;
@@ -108,7 +107,7 @@ public class SerialTmFrameLink extends AbstractTmFrameLink implements Runnable {
                 log.info("Closing {}", deviceName);
             	serialPort.close();
             } catch (IOException e) {
-                log.warn("Exception got when closing the serial port:", e);
+                log.warn("Exception raised when closing the serial port:", e);
             }
             serialPort = null;
         }
@@ -165,8 +164,8 @@ public class SerialTmFrameLink extends AbstractTmFrameLink implements Runnable {
         if (isDisabled()) {
             return "DISABLED";
         } else {
-            return String.format("OK (%s) %nValid datagrams received: %d%nInvalid datagrams received: %d",
-            		deviceName, frameCount.get(), invalidDatagramCount);
+            return String.format("OK (%s) %nValid datagrams received: %d%n",
+            		deviceName, frameCount.get());
         }
     }
 
@@ -177,7 +176,7 @@ public class SerialTmFrameLink extends AbstractTmFrameLink implements Runnable {
                 log.info("Closing {}", deviceName);
             	serialPort.close();
             } catch (IOException e) {
-                log.warn("Exception got when closing the serial port:", e);
+                log.warn("Exception raised closing the serial port:", e);
             }
             serialPort = null;
         }
@@ -194,7 +193,7 @@ public class SerialTmFrameLink extends AbstractTmFrameLink implements Runnable {
 
     @Override
     protected Status connectionStatus() {
-        return Status.OK;
+        return (serialPort == null) ? Status.DISABLED : Status.OK;
     }
     
     protected void openDevice() {

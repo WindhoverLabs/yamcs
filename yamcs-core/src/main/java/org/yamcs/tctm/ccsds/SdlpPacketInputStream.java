@@ -13,6 +13,7 @@ import org.yamcs.events.EventProducer;
 import org.yamcs.events.EventProducerFactory;
 import org.yamcs.tctm.PacketInputStream;
 import org.yamcs.utils.StringConverter;
+import org.yamcs.ConfigurationException;
 
 /**
  * Reads CCSDS packets from an input stream:
@@ -72,23 +73,23 @@ public class SdlpPacketInputStream implements PacketInputStream {
         		SdlpPacketInputStream.class.getName(), 0);
         
         if(maxLength < 0) {
-            throw new IllegalArgumentException("'maxLength' must be defined.");
+            throw new ConfigurationException("'maxLength' must be defined.");
         }
         
         if(maxLength < minLength) {
-            throw new IllegalArgumentException("'maxLength' (" + maxLength + ") must not be less than 'minLength' (" + minLength + ").");
+            throw new ConfigurationException("'maxLength' (" + maxLength + ") must not be less than 'minLength' (" + minLength + ").");
         }
         
         if(maxLength < 0) {
-            throw new IllegalArgumentException("'maxLength' (" + maxLength + ") must be greater than zero.");
+            throw new ConfigurationException("'maxLength' (" + maxLength + ") must be greater than zero.");
         }
         
         if(minLength < 0) {
-            throw new IllegalArgumentException("'minLength' (" + maxLength + ") must be greater than zero.");
+            throw new ConfigurationException("'minLength' (" + maxLength + ") must be greater than zero.");
         }
         
         if(dropMalformed && (maxLength < 0)) {
-            throw new IllegalArgumentException("'dropMalformed' must not be 'true' unless 'maxLength' is defined.");
+            throw new ConfigurationException("'dropMalformed' must not be 'true' unless 'maxLength' is defined.");
         }
         
         eventProducer.sendInfo("ASM set to " + asmString);
