@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import org.yamcs.ConfigurationException;
 import org.yamcs.time.Instant;
+import org.yamcs.utils.StringConverter;
 import org.yamcs.utils.TimeEncoding;
 import org.yamcs.yarch.ColumnDefinition;
 import org.yamcs.yarch.DataType;
@@ -79,8 +80,10 @@ public class FrameStreamHelper {
 
     public void sendGoodFrame(int seq, DownlinkTransferFrame frame, byte[] data, int offset, int length) {
         if (goodFrameStream == null) {
+            System.out.println("sendGoodFrame: null");
             return;
         }
+        System.out.println("sendGoodFrame:" + StringConverter.arrayToHexString(data));
         long rectime = TimeEncoding.getWallclockTime();
         goodFrameStream.emitTuple(new Tuple(gftdef, Arrays.asList(rectime, seq, frame.getEarthRceptionTime(),
                 frame.getSpacecraftId(), frame.getVirtualChannelId(),

@@ -11,6 +11,7 @@ import org.yamcs.commanding.PreparedCommand;
 import org.yamcs.tctm.CcsdsSeqCountFiller;
 import org.yamcs.tctm.CommandPostprocessor;
 import org.yamcs.utils.ByteArrayUtils;
+import org.yamcs.utils.StringConverter;
 import org.yamcs.utils.TimeEncoding;
 
 /**
@@ -83,17 +84,21 @@ public class CfsCommandPostprocessor implements CommandPostprocessor {
 
         // set the checksum
         binary[CHECKSUM_OFFSET] = 0;
-        int checksum = 0xFF;
-        for (int i = 0; i < binary.length; i++) {
-            checksum = checksum ^ binary[i];
-        }
-        binary[CHECKSUM_OFFSET] = (byte) checksum;
+//        int checksum = 0xFF;
+//        for (int i = 0; i < binary.length; i++) {
+//            checksum = checksum ^ binary[i];
+//        }
+//        binary[CHECKSUM_OFFSET] = (byte) checksum;
         if (swapChecksumFc) {
+            System.out.println("process1:" + StringConverter.arrayToHexString(binary));
             byte x = binary[CHECKSUM_OFFSET];
             binary[CHECKSUM_OFFSET] = binary[FC_OFFSET];
             binary[FC_OFFSET] = x;
+            System.out.println("process2:" + StringConverter.arrayToHexString(binary));
+
         }
         commandHistoryPublisher.publish(pc.getCommandId(), PreparedCommand.CNAME_BINARY, binary);
+        System.out.println("process3:" + StringConverter.arrayToHexString(binary));
         return binary;
     }
 

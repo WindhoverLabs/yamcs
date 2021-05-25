@@ -75,6 +75,8 @@ public class MasterChannelFrameHandler {
 
     public void handleFrame(Instant ertime, byte[] data, int offset, int length) throws TcTmException {
         DownlinkTransferFrame frame = null;
+        System.out.println("handleFrame1");
+
         try {
             frame = frameDecoder.decode(data, offset, length);
         } catch (TcTmException e) {
@@ -82,15 +84,20 @@ public class MasterChannelFrameHandler {
             frameStreamHelper.sendBadFrame(badframeCount, ertime, data, offset, length, e.getMessage());
             throw e;
         }
+        System.out.println("handleFrame2");
        
        
         if (frame.getSpacecraftId() != params.spacecraftId) {
             log.warn("Ignoring frame with unexpected spacecraftId {} (expected {})", frame.getSpacecraftId(),
                     params.spacecraftId);
             badframeCount++;
+            System.out.println("handleFrame3");
+
             frameStreamHelper.sendBadFrame(badframeCount, ertime, data, offset, length, "wrong spacecraft id");
             return;
         }
+        System.out.println("handleFrame4");
+
         
         frame.setEearthRceptionTime(ertime);
         frameCount++;

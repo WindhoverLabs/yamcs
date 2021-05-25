@@ -10,6 +10,7 @@ import org.yamcs.ConfigurationException;
 import org.yamcs.commanding.PreparedCommand;
 import org.yamcs.tctm.AbstractTcDataLink;
 import org.yamcs.tctm.ccsds.TcManagedParameters.TcVcManagedParameters;
+import org.yamcs.utils.StringConverter;
 import org.yamcs.utils.TimeEncoding;
 
 /**
@@ -42,6 +43,8 @@ public class TcPacketHandler extends AbstractTcDataLink implements VcUplinkHandl
         int framingLength = frameFactory.getFramingLength(vmp.vcId);
         int pcLength = cmdPostProcessor.getBinaryLength(preparedCommand);
         
+        System.out.println("binary command:" + StringConverter.arrayToHexString(preparedCommand.getBinary()));
+        
         System.out.println("pcLength:" + pcLength);
         
         System.out.println("framingLength:" + framingLength);
@@ -52,21 +55,31 @@ public class TcPacketHandler extends AbstractTcDataLink implements VcUplinkHandl
             failedCommand(preparedCommand.getCommandId(),
                     "Command too large to fit in a frame; cmd size: " + pcLength + "; max frame length: "
                             + vmp.maxFrameLength + "; frame overhead: " + framingLength);
+            System.out.println("binary command2:" + StringConverter.arrayToHexString(preparedCommand.getBinary()));
             return;
         }
 
         if (blockSenderOnQueueFull) {
+            
+            System.out.println("binary command3:" + StringConverter.arrayToHexString(preparedCommand.getBinary()));
+
             try {
                 commandQueue.put(preparedCommand);
+                System.out.println("binary command4:" + StringConverter.arrayToHexString(preparedCommand.getBinary()));
+
                 dataAvailableSemaphore.release();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 failedCommand(preparedCommand.getCommandId(), "Interrupted");
             }
         } else {
+            System.out.println("binary command5:" + StringConverter.arrayToHexString(preparedCommand.getBinary()));
+
             if (commandQueue.offer(preparedCommand)) {
+                System.out.println("binary comman6:" + StringConverter.arrayToHexString(preparedCommand.getBinary()));
                 dataAvailableSemaphore.release();
             } else {
+                System.out.println("binary command7:" + StringConverter.arrayToHexString(preparedCommand.getBinary()));
                 failedCommand(preparedCommand.getCommandId(), "queue full");
             }
         }
@@ -90,6 +103,8 @@ public class TcPacketHandler extends AbstractTcDataLink implements VcUplinkHandl
                 if (pc == null) {
                     break;
                 }
+                System.out.println("(getFrame)binary command:" + StringConverter.arrayToHexString(pc.getBinary()));
+
                 l.add(pc);
                 dataLength += pcLength;
                 if (!vmp.multiplePacketsPerFrame) {
@@ -111,12 +126,20 @@ public class TcPacketHandler extends AbstractTcDataLink implements VcUplinkHandl
         int offset = tf.getDataStart();
         for (PreparedCommand pc1 : l) {
             byte[] binary = cmdPostProcessor.process(pc1);
+            System.out.println("(getFrame2)binary command:" + StringConverter.arrayToHexString(binary));
+
             if (binary == null) {
                 log.warn("command postprocessor did not process the command");
                 continue;
             }
             int length = binary.length;
+            System.out.println("(getFrame3)binary command:" + StringConverter.arrayToHexString(binary));
+            System.out.println("(getFrame4)data command:" + StringConverter.arrayToHexString(data));
+
             System.arraycopy(binary, 0, data, offset, length);
+            System.out.println("(getFrame5)data command:" + StringConverter.arrayToHexString(data));
+
+            System.out.println("(getFrame6)binary command:" + StringConverter.arrayToHexString(binary));
             offset += length;
         }
         dataCount.getAndAdd(l.size());
