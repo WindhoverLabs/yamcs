@@ -80,10 +80,8 @@ public class FrameStreamHelper {
 
     public void sendGoodFrame(int seq, DownlinkTransferFrame frame, byte[] data, int offset, int length) {
         if (goodFrameStream == null) {
-//            System.out.println("sendGoodFrame: null");
             return;
         }
-//        System.out.println("sendGoodFrame:" + StringConverter.arrayToHexString(data));
         long rectime = TimeEncoding.getWallclockTime();
         goodFrameStream.emitTuple(new Tuple(gftdef, Arrays.asList(rectime, seq, frame.getEarthRceptionTime(),
                 frame.getSpacecraftId(), frame.getVirtualChannelId(),

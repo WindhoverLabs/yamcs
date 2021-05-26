@@ -40,12 +40,6 @@ public class SerialTcFrameLink extends AbstractTcFrameLink implements Runnable {
     SerialPort serialPort = null;
     Thread thread;
     
-    public SerialTcFrameLink(SerialPort newSerialPort) 
-    {
-        super();
-        serialPort = newSerialPort;
-    }
-
     /**
      * Creates a new Serial Frame Data Link
      * 
@@ -128,31 +122,6 @@ public class SerialTcFrameLink extends AbstractTcFrameLink implements Runnable {
                     e1.printStackTrace();
                 }
                 try {
-                    System.out.println("cltuStart Token:" + getConfig().getString("cltuStartSequence"));
-                    byte[] beginSyncSymbol = getConfig().getString("cltuStartSequence").getBytes();
-//                    beginSyncSymbol[0] = (byte) 0xEB;
-//                    beginSyncSymbol[1] = (byte) 0x90;
-                    
-                    System.out.println("cltuTail Token:" + getConfig().getString("cltuTailSequence"));
-
-
-                    byte[] endSyncSymbol = getConfig().getString("cltuTailSequence").getBytes();
-//                        { (byte) 0xc5, (byte) 0xc5, (byte) 0xc5, (byte) 0xc5, (byte) 0xc5,
-//                            (byte) 0xc5, (byte) 0xc5, (byte) 0x79 };
-//                    getConfig().get("cltuStartSequence");
-
-//                    byte[] commandBinary = Bytes.concat(beginSyncSymbol, data, endSyncSymbol);
-                    
-                    System.out.println("beginSyncSymbol:" + StringConverter.arrayToHexString(beginSyncSymbol));
-                    System.out.println("endSyncSymbol:" + StringConverter.arrayToHexString(endSyncSymbol));
-
-                    
-                    System.out.println(StringConverter.arrayToHexString(data));
-
-                    // outStream.write(beginSyncSymbol);
-                    // outStream.write(binary);
-
-                    System.out.println("isRunningAndEnabled");
                     outStream.write(data);
 
                     // commandHistoryPublisher.publishAck(pc.getCommandId(), "$$Sent$$", getCurrentTime(),
@@ -353,31 +322,10 @@ public class SerialTcFrameLink extends AbstractTcFrameLink implements Runnable {
 
     @Override
     public void sendTc(PreparedCommand pc) {
-        byte[] binary = pc.getBinary();
-//        if (binary == null) {
-//            log.warn("command postprocessor did not process the command");
-//            return;
-//        }
-//
-//        int retries = 5;
-//        boolean sent = false;
-//
-//        OutputStream outStream = null;
-//        try {
-//            outStream = serialPort.getOutputStream();
-//        } catch (IOException e1) {
-//            // TODO Auto-generated catch block
-//            e1.printStackTrace();
-//        }
-//        byte[] beginSyncSymbol = new byte[2];
-//        beginSyncSymbol[0] = (byte) 0xEB;
-//        beginSyncSymbol[1] = (byte) 0x90;
-//
-//        byte[] endSyncSymbol = { (byte) 0xc5, (byte) 0xc5, (byte) 0xc5, (byte) 0xc5, (byte) 0xc5, (byte) 0xc5,
-//                (byte) 0xc5, (byte) 0x79 };
-//
-//        byte[] commandBinary = Bytes.concat(beginSyncSymbol, binary, endSyncSymbol);
+        //Not used when framing commands.
+    }
 
-        System.out.println("--------------------sendTc");
+    public void setSerialPort(SerialPort inSerialPort) {
+        serialPort = inSerialPort;  
     }
 }

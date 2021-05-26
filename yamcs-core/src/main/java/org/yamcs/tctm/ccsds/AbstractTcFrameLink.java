@@ -113,11 +113,27 @@ public abstract class AbstractTcFrameLink extends AbstractLink implements Aggreg
     protected void ackBypassFrame(TcTransferFrame tf) {
         System.out.println("ackBypassFrame");
         if (tf.getCommands() != null) {
+            System.out.println("ackBypassFrame2");
+
             for (PreparedCommand pc : tf.getCommands()) {
+                System.out.println("ackBypassFrame3");
+                
+                System.out.println("pc:" + pc);
+                System.out.println("pc.getCommandId:" + pc.getCommandId());
+                System.out.println("CommandHistoryPublisher:" + commandHistoryPublisher);
+                System.out.println("CommandHistoryPublisher.AcknowledgeSent:" + CommandHistoryPublisher.AcknowledgeSent);
+                System.out.println("timeService.getMissionTime():" + timeService.getMissionTime());
+                
                 commandHistoryPublisher.publishAck(pc.getCommandId(), CommandHistoryPublisher.AcknowledgeSent,
                         timeService.getMissionTime(), AckStatus.OK);
+                System.out.println("ackBypassFrame4");
+
             }
+            System.out.println("ackBypassFrame5");
+
         }
+        System.out.println("ackBypassFrame6");
+
     }
 
     protected void failBypassFrame(TcTransferFrame tf, String reason) {

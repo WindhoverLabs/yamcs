@@ -8,17 +8,11 @@ import java.net.SocketException;
 import org.yamcs.ConfigurationException;
 import org.yamcs.YConfiguration;
 import org.yamcs.tctm.TcTmException;
-import org.yamcs.tctm.Link.Status;
 import org.yamcs.utils.StringConverter;
-import org.openmuc.jrxtx.DataBits;
 import org.openmuc.jrxtx.SerialPort;
 import org.openmuc.jrxtx.SerialPortBuilder;
 import org.yamcs.tctm.PacketInputStream;
-import org.yamcs.TmPacket;
 import org.yamcs.tctm.CcsdsPacketInputStream;
-import org.yamcs.tctm.PacketInputStream;
-import org.yamcs.tctm.PacketTooLongException;
-import java.io.IOException;
 import org.yamcs.utils.YObjectLoader;
 
 /**
@@ -43,11 +37,6 @@ public class SerialTmFrameLink extends AbstractTmFrameLink implements Runnable {
     YConfiguration packetInputStreamArgs;
     PacketInputStream packetInputStream;
     Thread thread;
-
-    public SerialTmFrameLink(SerialPort newSerialPort) {
-        // super();
-        serialPort = newSerialPort;
-    }
 
     /**
      * Creates a new Serial Frame Data Link
@@ -91,6 +80,19 @@ public class SerialTmFrameLink extends AbstractTmFrameLink implements Runnable {
             this.packetInputStreamClassName = CcsdsPacketInputStream.class.getName();
             this.packetInputStreamArgs = YConfiguration.emptyConfig();
         }
+
+        try {
+            packetInputStream = YObjectLoader.loadObject(packetInputStreamClassName);
+        } catch (ConfigurationException e) {
+            log.error("Cannot instantiate the packetInput stream", e);
+            throw e;
+        }
+        try {
+            packetInputStream.init(serialPort.getInputStream(), packetInputStreamArgs);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -133,48 +135,32 @@ public class SerialTmFrameLink extends AbstractTmFrameLink implements Runnable {
         }
 
         while (isRunningAndEnabled()) {
-            // System.out.println("isRunningAndEnabled1");
-
             try {
-                // System.out.println("isRunningAndEnabled2");
-                //
-                // System.out.println("packetInputStream:" + packetInputStream);
-                //
-                // System.out.println("serialPort:" + serialPort);
 
                 byte[] packet = packetInputStream.readPacket();
 
                 int length = packet.length;
                 if (log.isTraceEnabled()) {
-                    System.out.println("isRunningAndEnabled3");
                     log.trace("Received packet of length {}: {}", length, StringConverter
                             .arrayToHexString(packet, 0, length, true));
                 }
                 if (length < frameHandler.getMinFrameSize()) {
-                    System.out.println("isRunningAndEnabled4");
                     eventProducer.sendWarning("Error processing frame: size " + length
                             + " shorter than minimum allowed " + frameHandler.getMinFrameSize());
                     continue;
                 }
                 if (length > frameHandler.getMaxFrameSize()) {
-                    System.out.println("isRunningAndEnabled5");
                     eventProducer.sendWarning("Error processing frame: size " + length + " longer than maximum allowed "
                             + frameHandler.getMaxFrameSize());
                     continue;
                 }
-                System.out.println("isRunningAndEnabled6");
 
                 frameCount.getAndIncrement();
 
                 frameHandler.handleFrame(timeService.getHresMissionTime(), packet, 0, length);
             } catch (TcTmException e) {
-
-                System.out.println("isRunningAndEnabled7");
                 eventProducer.sendWarning("Error processing frame: " + e.toString());
             } catch (Exception e) {
-                // System.out.println("isRunningAndEnabled8");
-
-                // log.error("Error processing frame", e);
             }
         }
     }
@@ -221,12 +207,9 @@ public class SerialTmFrameLink extends AbstractTmFrameLink implements Runnable {
 
     protected void openDevice() {
         try {
-            System.out.println("openDevice1");
             if (serialPort == null) {
                 serialPort = SerialPortBuilder.newBuilder(deviceName).setBaudRate(baudRate).build();
             }
-            System.out.println("openDevice2");
-
             switch (this.flowControl) {
             case "NONE":
                 serialPort.setFlowControl(org.openmuc.jrxtx.FlowControl.NONE);
@@ -302,7 +285,6 @@ public class SerialTmFrameLink extends AbstractTmFrameLink implements Runnable {
                 log.error("Cannot instantiate the packetInput stream", e);
                 throw e;
             }
-            System.out.println();
             packetInputStream.init(serialPort.getInputStream(), packetInputStreamArgs);
         } catch (IOException e) {
             if (isRunningAndEnabled()) {
@@ -326,5 +308,9 @@ public class SerialTmFrameLink extends AbstractTmFrameLink implements Runnable {
                 }
             }
         }
+    }
+
+    public void setSerialPort(SerialPort newSerialPort) {
+        serialPort = newSerialPort;
     }
 }

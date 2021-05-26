@@ -49,6 +49,8 @@ public class MasterChannelFrameHandler {
         String goodFrameStreamName = config.getString("goodFrameStream", null);
         String badFrameStreamName = config.getString("badFrameStream", null);
         
+        System.out.println("goodFrameStreamName:" + goodFrameStreamName);
+        
         frameStreamHelper = new FrameStreamHelper(yamcsInstance, goodFrameStreamName, badFrameStreamName);
 
         switch (frameType) {
@@ -91,7 +93,7 @@ public class MasterChannelFrameHandler {
             log.warn("Ignoring frame with unexpected spacecraftId {} (expected {})", frame.getSpacecraftId(),
                     params.spacecraftId);
             badframeCount++;
-//            System.out.println("handleFrame3");
+            System.out.println("handleFrame3");
 
             frameStreamHelper.sendBadFrame(badframeCount, ertime, data, offset, length, "wrong spacecraft id");
             return;
@@ -101,6 +103,7 @@ public class MasterChannelFrameHandler {
         
         frame.setEearthRceptionTime(ertime);
         frameCount++;
+//        System.out.println("length:" + length);
         
         frameStreamHelper.sendGoodFrame(frameCount, frame, data, offset, length);
         
