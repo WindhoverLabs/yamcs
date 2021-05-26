@@ -2,6 +2,8 @@ package org.yamcs.tctm.cfs;
 
 import static org.yamcs.cmdhistory.CommandHistoryPublisher.AcknowledgeSent;
 
+import java.util.Arrays;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yamcs.YConfiguration;
@@ -78,27 +80,31 @@ public class CfsCommandPostprocessor implements CommandPostprocessor {
             return null;
         }
         
+        System.out.println("process1");
+        System.out.println(Arrays.toString(Thread.currentThread().getStackTrace()));
+        System.out.println("Thread id for CfsCommandPostprocessor:" + Thread.currentThread().getId());
+
         ByteArrayUtils.encodeShort(binary.length - 7, binary, 4);// set packet length
         int seqCount = seqFiller.fill(binary);
         commandHistoryPublisher.publish(pc.getCommandId(), CommandHistoryPublisher.CcsdsSeq_KEY, seqCount);
 
         // set the checksum
         binary[CHECKSUM_OFFSET] = 0;
-//        int checksum = 0xFF;
-//        for (int i = 0; i < binary.length; i++) {
-//            checksum = checksum ^ binary[i];
-//        }
-//        binary[CHECKSUM_OFFSET] = (byte) checksum;
+        int checksum = 0xFF;
+        for (int i = 0; i < binary.length; i++) {
+            checksum = checksum ^ binary[i];
+        }
+        binary[CHECKSUM_OFFSET] = (byte) checksum;
         if (swapChecksumFc) {
-            System.out.println("process1:" + StringConverter.arrayToHexString(binary));
+            System.out.println("process2:" + StringConverter.arrayToHexString(binary));
             byte x = binary[CHECKSUM_OFFSET];
             binary[CHECKSUM_OFFSET] = binary[FC_OFFSET];
             binary[FC_OFFSET] = x;
-            System.out.println("process2:" + StringConverter.arrayToHexString(binary));
+            System.out.println("process3:" + StringConverter.arrayToHexString(binary));
 
         }
         commandHistoryPublisher.publish(pc.getCommandId(), PreparedCommand.CNAME_BINARY, binary);
-        System.out.println("process3:" + StringConverter.arrayToHexString(binary));
+        System.out.println("process4:" + StringConverter.arrayToHexString(binary));
         return binary;
     }
 

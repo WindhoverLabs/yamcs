@@ -18,7 +18,7 @@ import com.google.common.primitives.Bytes;
 import com.google.common.util.concurrent.RateLimiter;
 
 /**
- * Receives telemetry fames via serial interface.
+ * Send command fames via serial interface.
  * 
  * 
  * @author Mathew Benson (mbenson@windhoverlabs.com)
@@ -39,6 +39,12 @@ public class SerialTcFrameLink extends AbstractTcFrameLink implements Runnable {
 
     SerialPort serialPort = null;
     Thread thread;
+    
+    public SerialTcFrameLink(SerialPort newSerialPort) 
+    {
+        super();
+        serialPort = newSerialPort;
+    }
 
     /**
      * Creates a new Serial Frame Data Link
@@ -348,99 +354,30 @@ public class SerialTcFrameLink extends AbstractTcFrameLink implements Runnable {
     @Override
     public void sendTc(PreparedCommand pc) {
         byte[] binary = pc.getBinary();
-        if (binary == null) {
-            log.warn("command postprocessor did not process the command");
-            return;
-        }
+//        if (binary == null) {
+//            log.warn("command postprocessor did not process the command");
+//            return;
+//        }
+//
+//        int retries = 5;
+//        boolean sent = false;
+//
+//        OutputStream outStream = null;
+//        try {
+//            outStream = serialPort.getOutputStream();
+//        } catch (IOException e1) {
+//            // TODO Auto-generated catch block
+//            e1.printStackTrace();
+//        }
+//        byte[] beginSyncSymbol = new byte[2];
+//        beginSyncSymbol[0] = (byte) 0xEB;
+//        beginSyncSymbol[1] = (byte) 0x90;
+//
+//        byte[] endSyncSymbol = { (byte) 0xc5, (byte) 0xc5, (byte) 0xc5, (byte) 0xc5, (byte) 0xc5, (byte) 0xc5,
+//                (byte) 0xc5, (byte) 0x79 };
+//
+//        byte[] commandBinary = Bytes.concat(beginSyncSymbol, binary, endSyncSymbol);
 
-        int retries = 5;
-        boolean sent = false;
-
-        OutputStream outStream = null;
-        try {
-            outStream = serialPort.getOutputStream();
-        } catch (IOException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
-        }
-        // try {
-        byte[] beginSyncSymbol = new byte[2];
-        beginSyncSymbol[0] = (byte) 0xEB;
-        beginSyncSymbol[1] = (byte) 0x90;
-
-        byte[] endSyncSymbol = { (byte) 0xc5, (byte) 0xc5, (byte) 0xc5, (byte) 0xc5, (byte) 0xc5, (byte) 0xc5,
-                (byte) 0xc5, (byte) 0x79 };
-
-        byte[] commandBinary = Bytes.concat(beginSyncSymbol, binary, endSyncSymbol);
-
-        System.out.println("sendTc");
-
-        pendingFrames.put(0, new TcTransferFrame(commandBinary, 66, 0));
-
-        // System.out.println(StringConverter.arrayToHexString(commandBinary));
-
-        // outStream.write(beginSyncSymbol);
-        // outStream.write(binary);
-
-        // outStream.write(commandBinary);
-
-        // commandHistoryPublisher.publishAck(pc.getCommandId(), "$$Sent$$", getCurrentTime(),
-        // CommandHistoryPublisher.AckStatus.OK);
-
-        // if (sent) {
-        // ackCommand(pc.getCommandId());
-        // } else {
-        // failedCommand(pc.getCommandId(), reason);
-        // }
-
-        // } catch (IOException e) {
-        // // TODO Auto-generated catch block
-        // e.printStackTrace();
-        // }
-
-        // ByteBuffer bb = ByteBuffer.wrap(binary);
-        // bb.rewind();
-        // String reason = null;
-        // while (!sent && (retries > 0)) {
-        // try {
-        // if(serialPort == null) {
-        // openDevice();
-        // }
-        //
-        // outputStream = serialPort.get
-        //
-        // WritableByteChannel channel = Channels.newChannel(outputStream);
-        // channel.write(bb);
-        // dataCount.getAndIncrement();
-        // sent = true;
-        // } catch (IOException e) {
-        // reason = String.format("Error writing to TC device to %s : %s", deviceName, e.getMessage());
-        // log.warn(reason);
-        // try {
-        // if (serialPort != null) {
-        // serialPort.close();
-        // }
-        // serialPort = null;
-        // } catch (IOException e1) {
-        // e1.printStackTrace();
-        // }
-        // }
-        // retries--;
-        // if (!sent && (retries > 0)) {
-        // try {
-        // log.warn("Command not sent, retrying in 2 seconds");
-        // Thread.sleep(2000);
-        // } catch (InterruptedException e) {
-        // log.warn("exception {} thrown when sleeping 2 sec", e.toString());
-        // Thread.currentThread().interrupt();
-        // }
-        // }
-        // }
-        // if (sent) {
-        // ackCommand(pc.getCommandId());
-        // } else {
-        // failedCommand(pc.getCommandId(), reason);
-        // }
-        // }
+        System.out.println("--------------------sendTc");
     }
 }

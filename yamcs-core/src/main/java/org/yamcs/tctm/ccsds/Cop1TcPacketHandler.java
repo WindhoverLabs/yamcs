@@ -248,6 +248,7 @@ public class Cop1TcPacketHandler extends AbstractTcDataLink implements VcUplinkH
     }
 
     private TcTransferFrame makeFrame(PreparedCommand pc, boolean bypassFlag) {
+        System.out.println("Cop1TcPacketHandler:makeFrame");
         byte[] binary = cmdPostProcessor.process(pc);
         if (binary == null) {
             log.warn("command postprocessor did not process the command");

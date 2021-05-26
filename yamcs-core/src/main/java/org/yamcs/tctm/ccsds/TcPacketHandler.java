@@ -39,10 +39,15 @@ public class TcPacketHandler extends AbstractTcDataLink implements VcUplinkHandl
 
     @Override
     public void sendTc(PreparedCommand preparedCommand) {
-        System.out.println("sendTc");
+        System.out.println("TcPacketHandler:sendTc-------------");
+        System.out.println("Thread id for TcPacketHandler:" + Thread.currentThread().getId());
         int framingLength = frameFactory.getFramingLength(vmp.vcId);
+        System.out.println("TcPacketHandler:sendTc2-------------");
+
         int pcLength = cmdPostProcessor.getBinaryLength(preparedCommand);
         
+        System.out.println("TcPacketHandler:sendTc3-------------");
+
         System.out.println("binary command:" + StringConverter.arrayToHexString(preparedCommand.getBinary()));
         
         System.out.println("pcLength:" + pcLength);
@@ -76,7 +81,7 @@ public class TcPacketHandler extends AbstractTcDataLink implements VcUplinkHandl
             System.out.println("binary command5:" + StringConverter.arrayToHexString(preparedCommand.getBinary()));
 
             if (commandQueue.offer(preparedCommand)) {
-                System.out.println("binary comman6:" + StringConverter.arrayToHexString(preparedCommand.getBinary()));
+                System.out.println("binary command6:" + StringConverter.arrayToHexString(preparedCommand.getBinary()));
                 dataAvailableSemaphore.release();
             } else {
                 System.out.println("binary command7:" + StringConverter.arrayToHexString(preparedCommand.getBinary()));
@@ -125,6 +130,7 @@ public class TcPacketHandler extends AbstractTcDataLink implements VcUplinkHandl
         byte[] data = tf.getData();
         int offset = tf.getDataStart();
         for (PreparedCommand pc1 : l) {
+            System.out.println("TcTransferFrame:getFrame1");
             byte[] binary = cmdPostProcessor.process(pc1);
             System.out.println("(getFrame2)binary command:" + StringConverter.arrayToHexString(binary));
 
