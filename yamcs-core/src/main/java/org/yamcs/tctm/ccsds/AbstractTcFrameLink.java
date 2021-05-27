@@ -26,7 +26,7 @@ import org.yamcs.utils.TimeEncoding;
  * @author nm
  *
  */
-public abstract class AbstractTcFrameLink extends AbstractLink implements AggregatedDataLink, TcDataLink{
+public abstract class AbstractTcFrameLink extends AbstractLink implements AggregatedDataLink, TcDataLink {
     protected int frameCount;
     boolean sendCltu;
     protected MasterChannelFrameMultiplexer multiplexer;
@@ -36,10 +36,10 @@ public abstract class AbstractTcFrameLink extends AbstractLink implements Aggreg
     protected CltuGenerator cltuGenerator;
     final static String CLTU_START_SEQ_KEY = "cltuStartSequence";
     final static String CLTU_TAIL_SEQ_KEY = "cltuTailSequence";
-    
+
     public void init(String yamcsInstance, String linkName, YConfiguration config) {
         super.init(yamcsInstance, linkName, config);
-        
+
         String cltuEncoding = config.getString("cltuEncoding", null);
         if (cltuEncoding != null) {
             if ("BCH".equals(cltuEncoding)) {
@@ -72,7 +72,6 @@ public abstract class AbstractTcFrameLink extends AbstractLink implements Aggreg
         }
     }
 
-    
     @Override
     public long getDataInCount() {
         return 0;
@@ -105,34 +104,18 @@ public abstract class AbstractTcFrameLink extends AbstractLink implements Aggreg
     }
 
     /**
-     * Ack the BD frames
-     * Note: the AD frames are acknowledged in the when the COP1 ack is received
+     * Ack the BD frames Note: the AD frames are acknowledged in the when the COP1 ack is received
      * 
      * @param tf
      */
     protected void ackBypassFrame(TcTransferFrame tf) {
-        System.out.println("ackBypassFrame");
         if (tf.getCommands() != null) {
-            System.out.println("ackBypassFrame2");
-
             for (PreparedCommand pc : tf.getCommands()) {
-                System.out.println("ackBypassFrame3");
-                
-                System.out.println("pc:" + pc);
-                System.out.println("pc.getCommandId:" + pc.getCommandId());
-                System.out.println("CommandHistoryPublisher:" + commandHistoryPublisher);
-                System.out.println("CommandHistoryPublisher.AcknowledgeSent:" + CommandHistoryPublisher.AcknowledgeSent);
-                System.out.println("timeService.getMissionTime():" + timeService.getMissionTime());
-                
                 commandHistoryPublisher.publishAck(pc.getCommandId(), CommandHistoryPublisher.AcknowledgeSent,
                         timeService.getMissionTime(), AckStatus.OK);
-                System.out.println("ackBypassFrame4");
-
             }
-            System.out.println("ackBypassFrame5");
 
         }
-        System.out.println("ackBypassFrame6");
 
     }
 

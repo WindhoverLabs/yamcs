@@ -83,34 +83,24 @@ public class SerialTcFrameLink extends AbstractTcFrameLink implements Runnable {
     @Override
     public void run() {
         while (isRunningAndEnabled()) {
-            System.out.println("run");
             if (rateLimiter != null) {
                 rateLimiter.acquire();
             }
-            System.out.println("run2");
             TcTransferFrame tf = multiplexer.getFrame();
-            System.out.println("run3");
-
             if (tf != null) {
-                System.out.println("run4");
-
                 byte[] data = tf.getData();
                 if (log.isTraceEnabled()) {
                     log.trace("Outgoing frame data: {}", StringConverter.arrayToHexString(data, true));
                 }
 
                 if (cltuGenerator != null) {
-                    System.out.println("$$makeCltu$$");
-                    System.out.println("before:"+ StringConverter.arrayToHexString(data));
                     data = cltuGenerator.makeCltu(data);
-                    System.out.println("after:"+ StringConverter.arrayToHexString(data));
                     if (log.isTraceEnabled()) {
                         log.trace("Outgoing CLTU: {}", StringConverter.arrayToHexString(data, true));
                     }
                 }
 
                 if (tf.isBypass()) {
-                    System.out.println("tf.isBypass():" + tf.isBypass());
                     ackBypassFrame(tf);
                 }
 
@@ -124,21 +114,11 @@ public class SerialTcFrameLink extends AbstractTcFrameLink implements Runnable {
                 try {
                     outStream.write(data);
 
-                    // commandHistoryPublisher.publishAck(pc.getCommandId(), "$$Sent$$", getCurrentTime(),
-                    // CommandHistoryPublisher.AckStatus.OK);
-
-                    // if (sent) {
-                    // ackCommand(pc.getCommandId());
-                    // } else {
-                    // failedCommand(pc.getCommandId(), reason);
-                    // }
-
                 } catch (IOException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
                 frameCount++;
-                System.out.println("run5");
 
             }
         }
@@ -289,13 +269,6 @@ public class SerialTcFrameLink extends AbstractTcFrameLink implements Runnable {
                 break;
             }
 
-            // try {
-            // packetInputStream = YObjectLoader.loadObject(packetInputStreamClassName);
-            // } catch (ConfigurationException e) {
-            // log.error("Cannot instantiate the packetInput stream", e);
-            // throw e;
-            // }
-            // packetInputStream.init(serialPort.getInputStream(), packetInputStreamArgs);
         } catch (IOException e) {
             if (isRunningAndEnabled()) {
                 log.info("Cannot open or read serial device {}::{}:{}'. Retrying in 10s", deviceName, e.getMessage(),
