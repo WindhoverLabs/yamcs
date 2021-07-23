@@ -78,6 +78,22 @@ public class FileTransferApi extends AbstractFileTransferApi<Context> {
 
         ListTransfersResponse.Builder responseb = ListTransfersResponse.newBuilder();
         for (FileTransfer transfer : transfers) {
+//            FIXME: The file transfer bug is happening here.
+            /**
+             *  org.yamcs.protobuf.TransferInfo$Builder.setBucket(TransferInfo.java:1525)
+        org.yamcs.http.api.FileTransferApi.toTransferInfo(FileTransferApi.java:269)
+        org.yamcs.http.api.FileTransferApi.subscribeTransfers(FileTransferApi.java:241)
+        org.yamcs.http.api.FileTransferApi.subscribeTransfers(FileTransferApi.java:49)
+        org.yamcs.protobuf.AbstractFileTransferApi.callMethod(AbstractFileTransferApi.java:160)
+        org.yamcs.http.Topic.callMethod(Topic.java:57)
+        org.yamcs.http.WebSocketFrameHandler.startNewContext(WebSocketFrameHandler.java:230)
+        org.yamcs.http.WebSocketFrameHandler.channelRead0(WebSocketFrameHandler.java:141)
+        org.yamcs.http.WebSocketFrameHandler.channelRead0(WebSocketFrameHandler.java:41)
+        io.netty.channel.SimpleChannelInboundHandler.channelRead(SimpleChannelInboundHandler.java:99)
+        io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:379)
+ 
+             */
+            System.out.println();
             responseb.addTransfers(toTransferInfo(transfer));
         }
         observer.complete(responseb.build());
