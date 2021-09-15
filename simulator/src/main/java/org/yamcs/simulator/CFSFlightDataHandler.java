@@ -6,22 +6,18 @@ import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FlightDataHandler {
-
+public class CFSFlightDataHandler  {
     private static final Logger log = LoggerFactory.getLogger(FlightDataHandler.class);
-
-    private List<FlightData> entries = new ArrayList<>(1000);
-    public List<FlightData> getEntries() {
-        return entries;
-    }
-
+    private List<CFSFlightData> entries = new ArrayList<>(1000);
+    
     private int currentEntry = 0;
 
-    public FlightDataHandler() {
+    public CFSFlightDataHandler() {
         try (BufferedReader in = new BufferedReader(new InputStreamReader(
                 FlightDataHandler.class.getResourceAsStream("/landing_data/Flight parameters.csv")))) {
             String line;
@@ -29,7 +25,7 @@ public class FlightDataHandler {
             while ((line = in.readLine()) != null) {
                 line = line.replace(',', '.'); // compatible to decimals with comma (e.g. 1,23)
                 String[] parts = line.split(";");
-                FlightData entry = new FlightData();
+                CFSFlightData entry = new CFSFlightData();
 
                 entry.timestamp = new Double(parts[0]).doubleValue();
                 entry.longitude = new Double(parts[1]).doubleValue();
@@ -52,9 +48,38 @@ public class FlightDataHandler {
         } catch (IOException e) {
             log.warn(e.getMessage(), e);
         }
-        log.debug("have {} flight data records", entries.size());
+        
+        fillInMatrices();
+        log.debug("have {} flight data records", entries.size());        fillInMatrices();
     }
 
+    private void fillInMatrices() 
+    {
+        Random randomGenerator = new Random();
+        for (FlightData entry : entries)
+       {
+           for(int i = 0;i<((CFSFlightData)entry).flatMatrix.length;i++) 
+           {
+               ((CFSFlightData)entry).flatMatrix[i] = randomGenerator.nextDouble();
+           }
+           
+           //TODO:Put these inside functions please
+           for (int i2 = 0; i2 < ((CFSFlightData)entry).matrix2D.length; i2++) {
+               for (int j = 0; j < ((CFSFlightData)entry).matrix2D[i2].length; j++) {
+                   ((CFSFlightData)entry).matrix2D[i2][j] = randomGenerator.nextDouble();
+               }
+           }
+           
+           for (int i3 = 0; i3 < ((CFSFlightData)entry).matrix3D.length; i3++) {
+               for (int j = 0; j < ((CFSFlightData)entry).matrix3D[i3].length; j++) {
+                   for (int k = 0; k < ((CFSFlightData)entry).matrix3D[i3][j].length; k++){
+                       ((CFSFlightData)entry).matrix3D[i3][j][k] = randomGenerator.nextDouble() ;
+                   }
+               }
+           }
+       }
+    }
+    
     public void fillPacket(ByteBuffer buffer) {
         if (entries.isEmpty()) {
             return;
@@ -64,11 +89,12 @@ public class FlightDataHandler {
             currentEntry = 0;
         }
 
-        FlightData entry = entries.get(currentEntry++);
+        CFSFlightData entry = entries.get(currentEntry++);
         entry.fillPacket(buffer);
     }
 
     public int dataSize() {
-        return FlightData.size();
+        return CFSFlightData.size();
     }
+    
 }

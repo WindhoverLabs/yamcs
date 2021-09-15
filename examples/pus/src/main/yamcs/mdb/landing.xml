@@ -1,5 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<SpaceSystem name="SIMULATOR">
+<?xml version="1.0" encoding="UTF-8" ?>
+<SpaceSystem name="SIMULATOR" xmlns="http://www.omg.org/spec/XTCE/20180204" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.omg.org/spec/XTCE/20180204 https://www.omg.org/spec/XTCE/20180204/SpaceSystem.xsd">
 	<Header validationStatus="Unknown" version="1.2" date="2020-11-26T03:11:27Z">
 	</Header>
 	<TelemetryMetaData>
@@ -133,6 +134,66 @@
 					</StaticAlarmRanges>
 				</DefaultAlarm>
 			</FloatParameterType>
+			<ArrayParameterType name="flatMatrix" arrayTypeRef="/dt/float32">
+			  <DimensionList>
+			    <Dimension>
+			      <StartingIndex>
+			        <FixedValue>0</FixedValue>
+			      </StartingIndex>
+			      <EndingIndex>
+			        <FixedValue>2</FixedValue>
+			      </EndingIndex>
+			    </Dimension>
+			  </DimensionList>
+			</ArrayParameterType>
+			<ArrayParameterType name="matrix2D" arrayTypeRef="/dt/float32">
+			  <DimensionList>
+			    <Dimension>
+			      <StartingIndex>
+			        <FixedValue>0</FixedValue>
+			      </StartingIndex>
+			      <EndingIndex>
+			        <FixedValue>3</FixedValue>
+			      </EndingIndex>
+			    </Dimension>
+			    <Dimension>
+			      <StartingIndex>
+			        <FixedValue>0</FixedValue>
+			      </StartingIndex>
+			      <EndingIndex>
+			        <FixedValue>3</FixedValue>
+			      </EndingIndex>
+			    </Dimension>
+			  </DimensionList>
+			</ArrayParameterType>
+            <ArrayParameterType name="matrix3D" arrayTypeRef="/dt/float32">
+        <DimensionList>
+          <Dimension>
+            <StartingIndex>
+              <FixedValue>0</FixedValue>
+            </StartingIndex>
+            <EndingIndex>
+              <FixedValue>3</FixedValue>
+            </EndingIndex>
+          </Dimension>
+          <Dimension>
+            <StartingIndex>
+              <FixedValue>0</FixedValue>
+            </StartingIndex>
+            <EndingIndex>
+              <FixedValue>3</FixedValue>
+            </EndingIndex>
+          </Dimension>
+          <Dimension>
+            <StartingIndex>
+              <FixedValue>0</FixedValue>
+            </StartingIndex>
+            <EndingIndex>
+              <FixedValue>3</FixedValue>
+            </EndingIndex>
+          </Dimension>
+        </DimensionList>
+      </ArrayParameterType>
 		</ParameterTypeSet>
 		<ParameterSet>
 			<Parameter parameterTypeRef="/dt/float32" name="ElapsedTime" />
@@ -223,6 +284,9 @@
 			<Parameter parameterTypeRef="engbool" initialValue="false" name="AllowCriticalTC2">
 				<ParameterProperties dataSource="local" />
 			</Parameter>
+			<Parameter parameterTypeRef="flatMatrix" name="flatMatrix"></Parameter>
+			<Parameter parameterTypeRef="matrix2D" name="matrix2D"></Parameter>
+            <Parameter parameterTypeRef="matrix3D" name="matrix3D"></Parameter>
 		</ParameterSet>
 		<ContainerSet>
 			<SequenceContainer name="FlightData">
@@ -314,7 +378,7 @@
 				<BaseContainer containerRef="/PUS/hk25">
 					<RestrictionCriteria>
 						<ComparisonList>
-							<Comparison parameterRef="/PUS/hkid" value="0" />
+							<Comparison parameterRef="/PUS/hkid" value="0" ></Comparison>
 						</ComparisonList>
 					</RestrictionCriteria>
 				</BaseContainer>
@@ -506,6 +570,108 @@
 						</ComparisonList>
 					</RestrictionCriteria>
 				</BaseContainer>
+			</SequenceContainer>
+			<SequenceContainer name="CfsFlightData">
+			  <EntryList><ParameterRefEntry parameterRef="ElapsedTime">
+            <LocationInContainerInBits referenceLocation="containerStart">
+              <FixedValue>128</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="Longitude">
+            <LocationInContainerInBits referenceLocation="containerStart">
+              <FixedValue>160</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="Latitude">
+            <LocationInContainerInBits referenceLocation="containerStart">
+              <FixedValue>192</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="Altitude">
+            <LocationInContainerInBits referenceLocation="containerStart">
+              <FixedValue>224</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="Position">
+            <LocationInContainerInBits referenceLocation="containerStart">
+              <FixedValue>160</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="Heading">
+            <LocationInContainerInBits referenceLocation="containerStart">
+              <FixedValue>256</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="Alpha">
+            <LocationInContainerInBits referenceLocation="containerStart">
+              <FixedValue>288</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="Beta">
+            <LocationInContainerInBits referenceLocation="containerStart">
+              <FixedValue>320</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="TAS">
+            <LocationInContainerInBits referenceLocation="containerStart">
+              <FixedValue>352</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="CAS">
+            <LocationInContainerInBits referenceLocation="containerStart">
+              <FixedValue>384</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="Mach_Number">
+            <LocationInContainerInBits referenceLocation="containerStart">
+              <FixedValue>416</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="Load_factor">
+            <LocationInContainerInBits referenceLocation="containerStart">
+              <FixedValue>448</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="SinkRate">
+            <LocationInContainerInBits referenceLocation="containerStart">
+              <FixedValue>480</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="Phi">
+            <LocationInContainerInBits referenceLocation="containerStart">
+              <FixedValue>512</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="Theta">
+            <LocationInContainerInBits referenceLocation="containerStart">
+              <FixedValue>544</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="Psi">
+            <LocationInContainerInBits referenceLocation="containerStart">
+              <FixedValue>576</FixedValue>
+            </LocationInContainerInBits>
+          </ParameterRefEntry>
+          <ParameterRefEntry parameterRef="flatMatrix">
+            <LocationInContainerInBits
+              referenceLocation="containerStart">
+              <FixedValue>580</FixedValue>
+            </LocationInContainerInBits></ParameterRefEntry>
+          <ParameterRefEntry parameterRef="matrix2D">
+            <LocationInContainerInBits
+              referenceLocation="containerStart">
+              <FixedValue>592</FixedValue>
+            </LocationInContainerInBits></ParameterRefEntry>          
+            <ParameterRefEntry parameterRef="matrix3D">
+            <LocationInContainerInBits
+              referenceLocation="containerStart">
+              <FixedValue>700</FixedValue>
+            </LocationInContainerInBits></ParameterRefEntry>
+            </EntryList>
+			  <BaseContainer containerRef="/PUS/hk25">
+			    <RestrictionCriteria>
+			      <Comparison value="5" parameterRef="../PUS/hkid" />
+			    </RestrictionCriteria></BaseContainer>
 			</SequenceContainer>
 		</ContainerSet>
 	</TelemetryMetaData>

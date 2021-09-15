@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yamcs.cfdp.pdu.CfdpPacket;
 import org.yamcs.simulator.AbstractSimulator;
+import org.yamcs.simulator.CFSFlightDataHandler;
 import org.yamcs.simulator.cfdp.CfdpCcsdsPacket;
 import org.yamcs.simulator.cfdp.CfdpReceiver;
 import org.yamcs.simulator.DHSHandler;
@@ -58,6 +59,7 @@ public class PusSimulator extends AbstractSimulator {
     TcpTmTcLink tmLink;
 
     FlightDataHandler flightDataHandler;
+    CFSFlightDataHandler cfsFlightDataHandler;
     DHSHandler dhsHandler;
     PowerHandler powerDataHandler;
     RCSHandler rcsHandler;
@@ -71,6 +73,7 @@ public class PusSimulator extends AbstractSimulator {
         rcsHandler = new RCSHandler();
         epslvpduHandler = new EpsLvpduHandler();
         flightDataHandler = new FlightDataHandler();
+        cfsFlightDataHandler = new CFSFlightDataHandler();
         dhsHandler = new DHSHandler();
         cfdpReceiver = new CfdpReceiver(this, dataDir);
     }
@@ -118,6 +121,12 @@ public class PusSimulator extends AbstractSimulator {
             buffer = packet.getUserDataBuffer();
             buffer.putInt(4);
             epslvpduHandler.fillPacket(buffer.slice());
+            transmitRealtimeTM(packet);
+            
+            packet = new PusTmPacket(MAIN_APID, 4 + cfsFlightDataHandler.dataSize(), PUS_TYPE_HK, 25);
+            buffer = packet.getUserDataBuffer();
+            buffer.putInt(5);
+            cfsFlightDataHandler.fillPacket(buffer.slice());
             transmitRealtimeTM(packet);
         } catch (Exception e) {
             e.printStackTrace();
