@@ -2,7 +2,7 @@ package org.yamcs.simulator;
 
 import java.nio.ByteBuffer;
 
-public class FlightData {
+public class FlightData implements SimData {
 
     public final static double MACH_ONE = 340.3; // m/s
 
@@ -15,6 +15,7 @@ public class FlightData {
         verticalSpeed = -1;
     }
 
+    @Override
     public void fillPacket(ByteBuffer buffer) {
         buffer.putFloat((float) timestamp);
         buffer.putFloat((float) longitude);

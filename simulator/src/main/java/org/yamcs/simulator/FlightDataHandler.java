@@ -60,7 +60,7 @@ public class FlightDataHandler {
             currentEntry = 0;
         }
 
-        FlightData entry = entries.get(currentEntry++);
+        SimData entry = entries.get(currentEntry++);
         entry.fillPacket(buffer);
     }
 
