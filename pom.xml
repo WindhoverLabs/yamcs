@@ -74,6 +74,8 @@
     <module>yamcs-tse</module>
     <module>yamcs-web</module>
     <module>yamcs-xtce</module>
+    
+    <module>yamcs-ds</module>
 
     <!-- Keep as last. It hosts the nexus uploading after a successful build -->
     <module>distribution</module>

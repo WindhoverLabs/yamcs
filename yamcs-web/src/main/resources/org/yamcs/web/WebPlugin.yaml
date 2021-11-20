@@ -112,14 +112,6 @@ options:
         redirected to the built-in login page.
     type: STRING
 
-  cfdp:
-    title: Show CFDP Functionalities
-    description:
-      - Controls whether functionalities related to CFDP are shown.
-      - Only enable when the service CfdpService is used.
-    type: BOOLEAN
-    deprecationMessage: This property is automatically derived. You can safely remove it from configuration.
-
   dass:
     title: Show DaSS Functionalities
     description:

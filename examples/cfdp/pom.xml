@@ -32,5 +32,10 @@
       <artifactId>yamcs-web</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>com.windhoverlabs</groupId>
+      <artifactId>yamcs-ds</artifactId>
+      <version>1.0.0</version>
+    </dependency>
   </dependencies>
 </project>

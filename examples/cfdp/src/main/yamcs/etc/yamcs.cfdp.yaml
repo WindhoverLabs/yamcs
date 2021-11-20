@@ -57,6 +57,7 @@ services:
          id: 7
      senderFaultHandlers:
        AckLimitReached: suspend
+  - class: com.windhoverlabs.yamcs.cfs.ds.DsService
 
 dataLinks:
   - name: tm_realtime

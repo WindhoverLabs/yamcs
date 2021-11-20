@@ -34,3 +34,6 @@ buckets:
 
   - name: stacks
     path: stacks
+
+  - name: cfdpUp
+    path: cfdp_upload
