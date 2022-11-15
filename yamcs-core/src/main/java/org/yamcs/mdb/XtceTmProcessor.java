@@ -13,11 +13,16 @@ import org.yamcs.TmProcessor;
 import org.yamcs.YConfiguration;
 import org.yamcs.container.ContainerProvider;
 import org.yamcs.logging.Log;
+import org.yamcs.parameter.AggregateValue;
 import org.yamcs.parameter.ParameterProcessor;
 import org.yamcs.parameter.ParameterProvider;
+import org.yamcs.parameter.ParameterValue;
 import org.yamcs.parameter.ParameterValueList;
+import org.yamcs.parameter.PartialParameterValue;
 import org.yamcs.protobuf.Yamcs.NamedObjectId;
+import org.yamcs.protobuf.Yamcs.Value;
 import org.yamcs.utils.TimeEncoding;
+import org.yamcs.xtce.AggregateParameterType;
 import org.yamcs.xtce.Container;
 import org.yamcs.xtce.Parameter;
 import org.yamcs.xtce.SequenceContainer;
@@ -143,6 +148,22 @@ public class XtceTmProcessor extends AbstractProcessorService
                     rectime, pkt.getSeqCount(), sc);
 
             ParameterValueList paramResult = result.getTmParams();
+            if(result.expireMillis > 0) 
+            {
+                for(ParameterValue pv: paramResult) 
+                {
+                    if(pv.getParameter().getParameterType().getValueType() == Value.Type.AGGREGATE) 
+                    {
+                        PartialParameterValue av = (PartialParameterValue) pv;
+                        
+                        for(int i = 0; i < av.getMemberNames().size();i++) {
+                            System.out.println("set expiredMillis:" + result.expireMillis + " for " + pv.getParameterQualifiedName());
+                            System.out.println("set expiredMillis:" + result.expireMillis + " for " + pv.getParameterQualifiedName());
+                            pv.setExpireMillis(result.expireMillis);
+                        }
+                    }
+                }
+            }
             List<ContainerExtractionResult> containerResult = result.containers;
 
             if ((parameterProcessorManager != null) && (paramResult.size() > 0)) {
