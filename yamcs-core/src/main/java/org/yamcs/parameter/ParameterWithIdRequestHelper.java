@@ -228,30 +228,7 @@ public class ParameterWithIdRequestHelper implements ParameterConsumer {
 
         List<ParameterValue> values = prm.getValuesFromCache(subscr.params.keySet());
         List<ParameterValueWithId> pvlist = new ArrayList<>(values.size());
-        
-        
-        
         for (ParameterValue pv : values) {
-            
-            
-//            ParameterValue pv1 = null;
-//            if (pv.path != null) {
-////                System.out.println("Qualified name4:" + pv.getQualifiedName());
-//                try {
-//                    pv1 = AggregateUtil.extractMember(pv, pwid.path);
-//                    if (pv1 == null) { // could be that we reference an element of an array that doesn't exist
-//                        continue;
-//                    }
-//                } catch (Exception e) {
-//                    log.error("Failed to extract {} from parameter value {}", Arrays.toString(pwid.path), pv, e);
-//                    continue;
-//                }
-//            } else {
-//                pv1 = pv;
-//            }
-            
-            
-            
             if (pv.isExpired(now)) {
                 pv = new ParameterValue(pv);
                 pv.setAcquisitionStatus(AcquisitionStatus.EXPIRED);
@@ -259,11 +236,9 @@ public class ParameterWithIdRequestHelper implements ParameterConsumer {
             if (subscr.checkExpiration && pv.hasExpirationTime()) {
                 subscr.pvexp.put(pv.getParameter(), pv);
             }
-            
-                       
+      
             List<ParameterWithId> l = subscr.params.get(pv.getParameter());
             
-            System.out.println("List --> " + l);
             if (l == null) {
                 log.warn("Received values for a parameter not requested: {}", pv.getParameter());
                 continue;
@@ -312,22 +287,12 @@ public class ParameterWithIdRequestHelper implements ParameterConsumer {
 
     // adds the pv into plist with all ids from idList
     private void addValueForAllIds(List<ParameterValueWithId> plist, List<ParameterWithId> idList, ParameterValue pv) {
-        int loopCounter = 0;
-        System.out.println("addValueForAllIds Entry");
         for (ParameterWithId pwid : idList) {
             ParameterValue pv1 = null;
             if (pwid.path != null) {
                 try {
-                    System.out.println(Arrays.toString(Thread.currentThread().getStackTrace()));
-                    System.out.println("Before: Qualified name4:" + pv.getParameterQualifiedName() + "/expiration time:" + 
-                            pv.hasExpirationTime() +"/thread_id:" + Thread.currentThread().getId() + "\nloopCounter:" + loopCounter);
-                                loopCounter++;
                     pv1 = AggregateUtil.extractMember(pv, pwid.path);
-//                    oldPv.isExpired(now)
-                  //TODO:Test whether this is really expired or not
-//                    pv.setAcquisitionStatus(AcquisitionStatus.EXPIRED);
-                    System.out.println("After: Qualified name4:" + pv.getParameterQualifiedName() + "/expiration time:" + 
-                            pv.hasExpirationTime() +"/thread_id:" + Thread.currentThread().getId() + "\nloopCounter:" + loopCounter);
+
                     if (pv1 == null) { // could be that we reference an element of an array that doesn't exist
                         continue;
                     }
@@ -336,25 +301,6 @@ public class ParameterWithIdRequestHelper implements ParameterConsumer {
                     continue;
                 }
                 
-                               
-                ArrayList<ParameterValue> pList = new ArrayList<ParameterValue>();
-                pList.add(pv);
-                long now = getAquisitionTime(pList);
-                //TODO:Do not forget to clean this mess.
-
-//                if (pv.hasExpirationTime()) {
-//                    oldPv = subscription.pvexp.put(p, pv);
-//                } else {
-//                    oldPv = subscription.pvexp.remove(p);
-//                }
-                if ((pv1 != null) && pv1.getAcquisitionStatus() == AcquisitionStatus.ACQUIRED && pv1.isExpired(now)) {                    
-                    System.out.println("Qualified name1:" + pv1.getParameterQualifiedName() + "set to EXPIRED");
-                    pv1.setAcquisitionStatus(AcquisitionStatus.EXPIRED);
-//                    tmp.setAcquisitionStatus(AcquisitionStatus.EXPIRED);
-                }
-                
-                //TODO:Test whether this is really expired or not
-//                pv1.setAcquisitionStatus(AcquisitionStatus.EXPIRED);
             } else {
                 pv1 = pv;
             }
@@ -363,7 +309,6 @@ public class ParameterWithIdRequestHelper implements ParameterConsumer {
             plist.add(pvwi);
         }
         
-        System.out.println("addValueForAllIds Exit");
     }
 
     /**
@@ -371,7 +316,6 @@ public class ParameterWithIdRequestHelper implements ParameterConsumer {
      */
     @Override
     public void updateItems(int subscriptionId, List<ParameterValue> items) {
-        System.out.println("updateItems-->Entry");
         if (subscriptionId == subscribeAllId) {
             updateAllSubscription(subscriptionId, items);
             return;
@@ -384,12 +328,9 @@ public class ParameterWithIdRequestHelper implements ParameterConsumer {
 
         List<ParameterValueWithId> plist = new ArrayList<>(items.size());
         synchronized (subscription) {
-            System.out.println("updateItems-->subscription.checkExpiration:" + subscription.checkExpiration);
             if (subscription.checkExpiration) {
                 long now = getAquisitionTime(items);
-                System.out.println("updateItems-->items:" + items);
                 List<ParameterValueWithId> expired = updateAndCheckExpiration(subscription, items, now);
-                System.out.println("expired list -->" + expired);
                 if (!expired.isEmpty()) {
                     log.debug("Updating {} parameters due to expiration", expired.size());
                     listener.update(subscriptionId, expired);
@@ -401,7 +342,6 @@ public class ParameterWithIdRequestHelper implements ParameterConsumer {
             }
         }
         listener.update(subscriptionId, plist);
-        System.out.println("updateItems-->Exit");
     }
 
     private void updateAllSubscription(int subscriptionId, List<ParameterValue> items) {
@@ -485,7 +425,6 @@ public class ParameterWithIdRequestHelper implements ParameterConsumer {
     // adds the pv into plist with all ids subscribed
     private void addValueForAllSubscribedIds(List<ParameterValueWithId> plist, Subscription subscription,
             ParameterValue pv) {
-        System.out.println("Qualified name3:" + pv.getParameterQualifiedName());
         Parameter p = pv.getParameter();
         List<ParameterWithId> idList = subscription.get(p);
         if (idList == null || idList.isEmpty()) {
@@ -530,7 +469,6 @@ public class ParameterWithIdRequestHelper implements ParameterConsumer {
                 ParameterValue tmp = new ParameterValue(oldPv); // make a copy because this is shared by other
                                                                 // subscribers
                 
-                System.out.println("Qualified name1:" + tmp.getParameterQualifiedName());
                 tmp.setAcquisitionStatus(AcquisitionStatus.EXPIRED);
                 addValueForAllSubscribedIds(expired, subscription, tmp);
             }
@@ -544,7 +482,6 @@ public class ParameterWithIdRequestHelper implements ParameterConsumer {
         for (ParameterValue pv : subscription.pvexp.values()) {
             if (pv.getAcquisitionStatus() == AcquisitionStatus.ACQUIRED && pv.isExpired(now)) {
                 
-                System.out.println("Qualified name2:" + pv.getParameterQualifiedName());
 
                 ParameterValue tmp = new ParameterValue(pv); // make a copy because this is shared by other subscribers
                 tmp.setAcquisitionStatus(AcquisitionStatus.EXPIRED);
