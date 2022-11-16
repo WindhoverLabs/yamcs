@@ -154,13 +154,22 @@ public class XtceTmProcessor extends AbstractProcessorService
                 {
                     if(pv.getParameter().getParameterType().getValueType() == Value.Type.AGGREGATE) 
                     {
-                        PartialParameterValue av = (PartialParameterValue) pv;
+//                        pv.setExpireMillis(result.expireMillis);
+//                        AggregateValue aggregateValue = (AggregateValue) pv.getRawValue();
+                        //Iterate through all of the members
+                        //Call setExpireMillis on each member
+//                        AggregateParameter av = (AggregateParameter) pv;
+//                        AggregateParameterType type = (AggregateParameterType) pv.getParameter().getParameterType() ;
+//                        for() {
+//                            
+//                        }
+//                        System.out.println("");
                         
-                        for(int i = 0; i < av.getMemberNames().size();i++) {
-                            System.out.println("set expiredMillis:" + result.expireMillis + " for " + pv.getParameterQualifiedName());
-                            System.out.println("set expiredMillis:" + result.expireMillis + " for " + pv.getParameterQualifiedName());
-                            pv.setExpireMillis(result.expireMillis);
-                        }
+//                        for(int i = 0; i < av.getMemberNames().size();i++) {
+//                            System.out.println("set expiredMillis:" + result.expireMillis + " for " + pv.getParameterQualifiedName());
+//                            System.out.println("set expiredMillis:" + result.expireMillis + " for " + pv.getParameterQualifiedName());
+//                            av.setExpireMillis(result.expireMillis);
+//                        }
                     }
                 }
             }
