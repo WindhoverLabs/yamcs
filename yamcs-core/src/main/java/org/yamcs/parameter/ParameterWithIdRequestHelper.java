@@ -325,7 +325,7 @@ public class ParameterWithIdRequestHelper implements ParameterConsumer {
                     pv1 = AggregateUtil.extractMember(pv, pwid.path);
 //                    oldPv.isExpired(now)
                   //TODO:Test whether this is really expired or not
-                    pv.setAcquisitionStatus(AcquisitionStatus.EXPIRED);
+//                    pv.setAcquisitionStatus(AcquisitionStatus.EXPIRED);
                     System.out.println("After: Qualified name4:" + pv.getParameterQualifiedName() + "/expiration time:" + 
                             pv.hasExpirationTime() +"/thread_id:" + Thread.currentThread().getId() + "\nloopCounter:" + loopCounter);
                     if (pv1 == null) { // could be that we reference an element of an array that doesn't exist
@@ -335,8 +335,26 @@ public class ParameterWithIdRequestHelper implements ParameterConsumer {
                     log.error("Failed to extract {} from parameter value {}", Arrays.toString(pwid.path), pv, e);
                     continue;
                 }
+                
+                               
+                ArrayList<ParameterValue> pList = new ArrayList<ParameterValue>();
+                pList.add(pv);
+                long now = getAquisitionTime(pList);
+                //TODO:Do not forget to clean this mess.
+
+//                if (pv.hasExpirationTime()) {
+//                    oldPv = subscription.pvexp.put(p, pv);
+//                } else {
+//                    oldPv = subscription.pvexp.remove(p);
+//                }
+                if ((pv1 != null) && pv1.getAcquisitionStatus() == AcquisitionStatus.ACQUIRED && pv1.isExpired(now)) {                    
+                    System.out.println("Qualified name1:" + pv1.getParameterQualifiedName() + "set to EXPIRED");
+                    pv1.setAcquisitionStatus(AcquisitionStatus.EXPIRED);
+//                    tmp.setAcquisitionStatus(AcquisitionStatus.EXPIRED);
+                }
+                
                 //TODO:Test whether this is really expired or not
-                pv1.setAcquisitionStatus(AcquisitionStatus.EXPIRED);
+//                pv1.setAcquisitionStatus(AcquisitionStatus.EXPIRED);
             } else {
                 pv1 = pv;
             }
@@ -353,6 +371,7 @@ public class ParameterWithIdRequestHelper implements ParameterConsumer {
      */
     @Override
     public void updateItems(int subscriptionId, List<ParameterValue> items) {
+        System.out.println("updateItems-->Entry");
         if (subscriptionId == subscribeAllId) {
             updateAllSubscription(subscriptionId, items);
             return;
@@ -365,9 +384,10 @@ public class ParameterWithIdRequestHelper implements ParameterConsumer {
 
         List<ParameterValueWithId> plist = new ArrayList<>(items.size());
         synchronized (subscription) {
+            System.out.println("updateItems-->subscription.checkExpiration:" + subscription.checkExpiration);
             if (subscription.checkExpiration) {
                 long now = getAquisitionTime(items);
-
+                System.out.println("updateItems-->items:" + items);
                 List<ParameterValueWithId> expired = updateAndCheckExpiration(subscription, items, now);
                 System.out.println("expired list -->" + expired);
                 if (!expired.isEmpty()) {
@@ -381,6 +401,7 @@ public class ParameterWithIdRequestHelper implements ParameterConsumer {
             }
         }
         listener.update(subscriptionId, plist);
+        System.out.println("updateItems-->Exit");
     }
 
     private void updateAllSubscription(int subscriptionId, List<ParameterValue> items) {
