@@ -109,9 +109,7 @@ public class MergeStream extends Stream implements StreamSubscriber, Runnable {
                 if (getState() == QUITTING) {
                     break;
                 }
-                System.out.println(Thread.currentThread().getStackTrace()[1]);
                 emitTuple(tq.t);
-                System.out.println(Thread.currentThread().getStackTrace()[1]);
                 // get a new tuple from the queue from which the previous one has been sent
                 Tuple t = tq.q.take();
                 if (t == queueEndMark) {

@@ -295,13 +295,11 @@ public class SystemParametersService extends AbstractYamcsService implements Run
     public static SystemParameter createSystemParameter(XtceDb mdb, String fqn, Yamcs.Value.Type basicType,
             UnitType unit, String description) {
         ParameterType ptype = getBasicType(mdb, basicType, unit);
-        System.out.println(Thread.currentThread().getStackTrace()[1]);
         return mdb.createSystemParameter(fqn, ptype, description);
     }
 
     public static SystemParameter createSystemParameter(XtceDb mdb, String fqn, Yamcs.Value.Type basicType,
             String description) {
-        System.out.println(Thread.currentThread().getStackTrace()[1]);
         return createSystemParameter(mdb, fqn, basicType, null, description);
     }
 
