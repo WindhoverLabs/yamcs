@@ -53,7 +53,9 @@ public abstract class Stream {
         dataCount.incrementAndGet();
         for (StreamSubscriber s : subscribers) {
             try {
+              //  System.out.println(Thread.currentThread().getStackTrace()[1]);
                 s.onTuple(this, tuple);
+             //   System.out.println(Thread.currentThread().getStackTrace()[1]);
             } catch (Exception e) {
                 if (handler != null) {
                     handler.handle(tuple, s, e);

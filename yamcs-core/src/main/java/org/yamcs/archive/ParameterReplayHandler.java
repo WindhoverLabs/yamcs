@@ -102,8 +102,17 @@ public class ParameterReplayHandler implements ReplayHandler {
             Parameter p = xtceDb.getParameter(pv.getParameterQualifiedName());
             if (p == null) {
                 if (XtceDb.isSystemParameter(pv.getParameterQualifiedName())) {
+                    System.out.println(Thread.currentThread().getStackTrace()[1]); //prints out
+                    System.out.println(pv.getParameterQualifiedName());
+                    if (!pv.getParameterQualifiedName().equals("/yamcs/yamcs1/df/dev/mapper/vg_data-lv_viper")) {
                     p = SystemParametersService.createSystemParameter(xtceDb, pv.getParameterQualifiedName(),
                             pv.getEngValue().getType(), null);
+                    }
+                    else {
+                    	p = null;
+                    	continue;
+                    }
+                    System.out.println(Thread.currentThread().getStackTrace()[1]);
                 } else {
                     log.info("Cannot find a parameter with fqn {}", pv.getParameterQualifiedName());
                     continue;
