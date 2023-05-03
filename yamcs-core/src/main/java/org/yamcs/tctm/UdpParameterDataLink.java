@@ -1,5 +1,7 @@
 package org.yamcs.tctm;
 
+import static org.yamcs.parameter.SystemParametersService.getPV;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -8,6 +10,8 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,10 +22,17 @@ import org.yamcs.YamcsServer;
 import org.yamcs.logging.Log;
 import org.yamcs.parameter.BasicParameterValue;
 import org.yamcs.parameter.ParameterValue;
+import org.yamcs.parameter.SystemParametersProducer;
+import org.yamcs.parameter.SystemParametersService;
+import org.yamcs.parameter.Value;
 import org.yamcs.protobuf.Pvalue;
 import org.yamcs.protobuf.Pvalue.ParameterData;
 import org.yamcs.protobuf.Yamcs.NamedObjectId;
+import org.yamcs.protobuf.Yamcs.Value.Type;
 import org.yamcs.time.TimeService;
+import org.yamcs.utils.ValueUtility;
+import org.yamcs.xtce.SystemParameter;
+import org.yamcs.xtce.UnitType;
 
 import com.google.common.util.concurrent.AbstractService;
 import com.google.protobuf.util.JsonFormat;
@@ -34,7 +45,7 @@ import com.google.protobuf.util.JsonFormat;
  * @author nm
  *
  */
-public class UdpParameterDataLink extends AbstractService implements ParameterDataLink, Runnable {
+public class UdpParameterDataLink extends AbstractParameterDataLink implements ParameterDataLink, Runnable {
 
     private volatile int validDatagramCount = 0;
     private volatile int invalidDatagramCount = 0;
@@ -49,6 +60,8 @@ public class UdpParameterDataLink extends AbstractService implements ParameterDa
     private Format format;
 
     ParameterSink parameterSink;
+    
+    private HashMap<String, ParameterValue> nameObjectIdtoParamValue;
 
     private Log log;
     int MAX_LENGTH = 10 * 1024;
@@ -56,9 +69,11 @@ public class UdpParameterDataLink extends AbstractService implements ParameterDa
     DatagramPacket datagram = new DatagramPacket(new byte[MAX_LENGTH], MAX_LENGTH);
     YConfiguration config;
     String name;
-
+    
+    private SystemParametersService collector;
     @Override
     public void init(String instance, String name, YConfiguration config) {
+    	super.init(instance, name, config);
         this.config = config;
         this.name = name;
         log = new Log(getClass(), instance);
@@ -67,6 +82,8 @@ public class UdpParameterDataLink extends AbstractService implements ParameterDa
         port = config.getInt("port");
         defaultRecordingGroup = config.getString("recordingGroup", "DEFAULT");
         format = config.getBoolean("json", false) ? Format.JSON : Format.PROTOBUF;
+        nameObjectIdtoParamValue = new HashMap<String, ParameterValue>();
+        
     }
 
     @Override
@@ -79,6 +96,13 @@ public class UdpParameterDataLink extends AbstractService implements ParameterDa
                 notifyFailed(e);
             }
         }
+        
+        
+        System.out.println("init1");
+        
+        collector = SystemParametersService.getInstance(yamcsInstance);
+        
+        System.out.println("init2 -->" + collector);
         notifyStarted();
     }
 
@@ -90,7 +114,7 @@ public class UdpParameterDataLink extends AbstractService implements ParameterDa
         notifyStopped();
     }
 
-    private boolean isRunningAndEnabled() {
+    public boolean isRunningAndEnabled() {
         State state = state();
         return (state == State.RUNNING || state == State.STARTING) && !disabled;
     }
@@ -125,11 +149,33 @@ public class UdpParameterDataLink extends AbstractService implements ParameterDa
                 if (id.hasNamespace()) {
                     log.trace("Using namespaced name for parameter {} because fully qualified name not available.", id);
                 }
+                
+                System.out.println("fqn-->" + fqn);
                 ParameterValue pv = BasicParameterValue.fromGpb(fqn, gpv);
                 long gentime = gpv.hasGenerationTime() ? pv.getGenerationTime() : now;
                 pv.setGenerationTime(gentime);
+                
+//                pv.setParameter(SystemParameter.getForFullyQualifiedName(fqn));
 
                 List<ParameterValue> pvals = valuesByTime.computeIfAbsent(gentime, x -> new ArrayList<>());
+                
+//                These are all hacks, we should really be using something like 
+//                org.yamcs.parameter.SystemParametersService.createSystemParameter(XtceDb, String, Value, UnitType)
+                if(nameObjectIdtoParamValue.get(fqn) == null) {
+                	// For now we are doing this ourselves since we want to be able  to add params dynamically
+                	// and not let the link manage it.
+                	System.out.println("pv.getParameter().getParameterType()-->" + pv.getEngValue().getType());
+                	var p =collector.createSystemParameter("paradigm/" + fqn, pv.getEngValue().getType(),
+                			"Data from SIM.");
+                	pv.setParameter(p);
+                	nameObjectIdtoParamValue.put(fqn, pv);
+                }
+                else {
+                	pv.setParameter(nameObjectIdtoParamValue.get(fqn).getParameter());
+                	nameObjectIdtoParamValue.put(fqn, pv);
+                }
+                
+                
                 pvals.add(pv);
             }
 
@@ -137,6 +183,41 @@ public class UdpParameterDataLink extends AbstractService implements ParameterDa
                 parameterSink.updateParameters((long) group.getKey(), recgroup, sequenceNumber, group.getValue());
             }
         }
+    }
+    
+    @Override
+    public Collection<ParameterValue> getSystemParameters(long gentime) {
+    super.getSystemParameters(gentime);
+      List<ParameterValue> pvlist = new ArrayList<>();
+      
+  	for(ParameterValue val: nameObjectIdtoParamValue.values()) {
+//		System.out.println("val.getParameter()-->" + val.getParameter());
+		System.out.println("val.getEngValue()-->" + val.getEngValue());
+		System.out.println("val.getParameter()-->" + val.getParameter());
+		System.out.println("time-->" + gentime);
+		pvlist.add(getPV(val.getParameter(), gentime, val.getEngValue()));
+	}
+
+      return pvlist;
+    }
+    
+    /**
+     * adds system parameters link status and data in/out to the list.
+     * <p>
+     * The inheriting classes should call super.collectSystemParameters and then add their own parameters to the list
+     * 
+     * @param time
+     * @param list
+     */
+    protected void collectSystemParameters(long time, List<ParameterValue> list) {
+    	super.collectSystemParameters(time, list);
+    	for(ParameterValue val: nameObjectIdtoParamValue.values()) {
+//    		System.out.println("val.getParameter()-->" + val.getParameter());
+//    		System.out.println("val.getEngValue()-->" + val.getEngValue());
+//    		System.out.println("val.getParameter()-->" + val.getParameter());
+//    		System.out.println("time-->" + time);
+    		list.add(getPV(val.getParameter(), time, 12.5));
+    	}
     }
 
     /**
@@ -282,4 +363,10 @@ public class UdpParameterDataLink extends AbstractService implements ParameterDa
         JSON,
         PROTOBUF;
     }
+
+	@Override
+	protected Status connectionStatus() {
+		// TODO Auto-generated method stub
+		return Status.OK;
+	}
 }
