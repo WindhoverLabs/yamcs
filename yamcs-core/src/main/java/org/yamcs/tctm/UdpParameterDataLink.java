@@ -42,7 +42,7 @@ import com.google.protobuf.util.JsonFormat;
  * 
  * The UDP packets are protobuf encoded ParameterData. We don't use any checksum, assume it's done by UDP.
  * 
- * @author nm
+ * @author lgomez
  *
  */
 public class UdpParameterDataLink extends AbstractParameterDataLink implements ParameterDataLink, Runnable {
@@ -98,11 +98,9 @@ public class UdpParameterDataLink extends AbstractParameterDataLink implements P
         }
         
         
-        System.out.println("init1");
         
         collector = SystemParametersService.getInstance(yamcsInstance);
         
-        System.out.println("init2 -->" + collector);
         notifyStarted();
     }
 
