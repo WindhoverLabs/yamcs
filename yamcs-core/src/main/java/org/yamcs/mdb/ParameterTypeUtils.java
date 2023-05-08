@@ -29,6 +29,7 @@ import org.yamcs.xtce.ParameterType;
 import org.yamcs.xtce.StringDataType;
 import org.yamcs.xtce.StringParameterType;
 import org.yamcs.xtce.ValueEnumeration;
+import org.yamcs.xtce.util.AggregateMemberNames;
 
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
@@ -228,7 +229,33 @@ public class ParameterTypeUtils {
             } else {
                 return null;
             }
-        } else {
+        }
+        else if (ptype instanceof AggregateParameterType) {
+//        	System.out.println("value type for Aggregate-->" + value.getClass());
+        	AggregateParameterType aggrType =  ((AggregateParameterType)ptype);
+        	AggregateMemberNames aggrMbr = ((AggregateParameterType)ptype).getMemberNames();
+//        	System.out.println("aggrMbr-->" + aggrMbr);
+        	AggregateValue ev = new AggregateValue(aggrMbr);
+        	
+        	for(int i = 0; i < aggrMbr.size(); i++) {
+        		ev.setMemberValue(aggrMbr.get(i), ValueUtility.getUint32Value(0));
+//        		ev.setMemberValue(aggrMbr.get(i), getEngValue(aggrType.getMember(i).getType()));
+        	}
+
+//            ev.setMemberValue("member1", ValueUtility.getUint32Value(m1));
+//            ev.setMemberValue("member2", ValueUtility.getUint32Value(23));
+//            ev.setMemberValue("member3", ValueUtility.getDoubleValue(v));
+        	
+        	return ev;
+//            if (value instanceof String) {
+//                return ValueUtility.getStringValue((String) value);
+//            } else {
+//                return null;
+//            }
+        }
+        
+        else {
+        	System.out.println("ptype-->" + ptype.getQualifiedName());
             throw new IllegalStateException("Unknown parameter type '" + ptype + "'");
         }
     }

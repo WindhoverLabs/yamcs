@@ -107,6 +107,8 @@ public class SystemParametersService extends AbstractYamcsService implements Run
 
         serverId = YamcsServer.getServer().getServerId();
         namespace = XtceDb.YAMCS_SPACESYSTEM_NAME + NameDescription.PATH_SEPARATOR + serverId;
+        
+        System.out.println("namespace-->" + namespace);
 
         log.debug("Using {} as serverId, and {} as namespace for system parameters", serverId, namespace);
         if (config.getBoolean("provideJvmVariables")) {

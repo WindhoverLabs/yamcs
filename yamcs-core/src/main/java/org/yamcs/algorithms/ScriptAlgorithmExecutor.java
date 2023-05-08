@@ -129,13 +129,20 @@ public class ScriptAlgorithmExecutor extends AbstractAlgorithmExecutor {
 
             List<ParameterValue> outputValues = new ArrayList<>();
             List<OutputParameter> outputList = algorithmDef.getOutputList();
+//            System.out.println("execute0");
             for (int k = 0; k < numOutputs; k++) {
                 OutputParameter outputParameter = outputList.get(k);
+//                System.out.println("execute1");
                 OutputValueBinding res = (OutputValueBinding) functionArgs[numInputs + k];
+//                System.out.println("res.value-->" + res.value);
+//                System.out.println("res.updated-->" + res.updated);
                 if (res.updated && (res.value != null || res.rawValue != null)) {
+//                	System.out.println("execute2");
                     ParameterValue pv = convertScriptOutputToParameterValue(outputParameter.getParameter(), res);
+//                    System.out.println("execute3");
                     pv.setAcquisitionTime(acqTime);
                     pv.setGenerationTime(genTime);
+//                    System.out.println("execute4");
                     outputValues.add(pv);
                 }
             }
@@ -227,20 +234,26 @@ public class ScriptAlgorithmExecutor extends AbstractAlgorithmExecutor {
         ParameterValue pval = new ParameterValue(parameter);
         ParameterType ptype = parameter.getParameterType();
         DataEncoding de = null;
-
+        
+//        System.out.println("convertScriptOutputToParameterValue1");
         if (binding.rawValue != null) {
+        	System.out.println("convertScriptOutputToParameterValue2");
             if (ptype instanceof BaseDataType) {
                 de = ((BaseDataType) ptype).getEncoding();
             }
+            System.out.println("convertScriptOutputToParameterValue3");
 
             if (de != null) {
+            	System.out.println("convertScriptOutputToParameterValue4");
                 Value rawV = DataEncodingDecoder.getRawValue(de, binding.rawValue);
                 if (rawV == null) {
+                	System.out.println("convertScriptOutputToParameterValue5");
                     throw new InvalidAlgorithmOutputException(parameter, binding,
                             "Cannot convert raw value from algorithm output "
                                     + "'" + binding.value + "' of type " + binding.value.getClass()
                                     + " into values for the data encoding " + de);
                 } else {
+//                	System.out.println("convertScriptOutputToParameterValue6");
                     pval.setRawValue(rawV);
                     if (binding.value == null) {
                         parameterTypeProcessor.calibrate(pval);
@@ -251,6 +264,8 @@ public class ScriptAlgorithmExecutor extends AbstractAlgorithmExecutor {
                         + " but the parameter has no data encoding");
             }
         }
+        
+//    	System.out.println("convertScriptOutputToParameterValue7");
 
         if (binding.value != null) {
             Value v = ParameterTypeUtils.getEngValue(ptype, binding.value);

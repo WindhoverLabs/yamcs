@@ -247,35 +247,45 @@ public class AlgorithmManager extends AbstractProcessorService
      */
     public ActiveAlgorithm activateAlgorithm(Algorithm algorithm, AlgorithmExecutionContext execCtx)
             throws AlgorithmException {
+//    	System.out.println("activateAlgorithm1");
         ActiveAlgorithm activeAlgo = execCtx.getAlgorithm(algorithm.getQualifiedName());
+//        System.out.println("activateAlgorithm2");
         if (activeAlgo != null) {
+//        	System.out.println("activateAlgorithm3");
             throw new IllegalStateException("Algorithm " + algorithm.getQualifiedName() + " already active");
         }
-
+//        System.out.println("activateAlgorithm4");
         AlgorithmExecutor executor;
-
+//        System.out.println("activateAlgorithm5");
         try {
+//        	System.out.println("activateAlgorithm6");
             executor = makeExecutor(algorithm, execCtx);
+//            System.out.println("activateAlgorithm7");
         } catch (AlgorithmException e) {
+//        	System.out.println("activateAlgorithm8");
             AlgorithmStatus algst = AlgorithmStatus.newBuilder()
                     .setErrorMessage("Failed to create executor"
                             + ((e.getMessage() == null) ? "" : ": " + e.getMessage()))
                     .setErrorTime(Timestamps.fromMillis(System.currentTimeMillis()))
                     .build();
+//            System.out.println("activateAlgorithm10");
             algorithmsInError.put(algorithm.getQualifiedName(), algst);
+//            System.out.println("activateAlgorithm11");
             throw e;
         }
-
+        
+//        System.out.println("activateAlgorithm12");
         algorithmsInError.remove(algorithm.getQualifiedName());
-
+//        System.out.println("activateAlgorithm13");
 
 
         log.trace("Activating algorithm....{}", algorithm.getQualifiedName());
+//        System.out.println("activateAlgorithm14");
         activeAlgo = new ActiveAlgorithm(algorithm, execCtx, executor);
-
+//        System.out.println("activateAlgorithm15");
         subscribeRequiredParameters(activeAlgo);
         execCtx.addAlgorithm(activeAlgo);
-
+//        System.out.println("activateAlgorithm16");
         return activeAlgo;
     }
 
@@ -346,20 +356,27 @@ public class AlgorithmManager extends AbstractProcessorService
 
     AlgorithmExecutor makeExecutor(Algorithm algorithm, AlgorithmExecutionContext execCtx) throws AlgorithmException {
         AlgorithmExecutor executor;
+        System.out.println("makeExecutor1");
         if (algorithm instanceof CustomAlgorithm) {
             CustomAlgorithm calg = (CustomAlgorithm) algorithm;
+            System.out.println("makeExecutor2");
             AlgorithmExecutorFactory factory = getFactory(calg, execCtx);
-
+            System.out.println("makeExecutor3");
             try {
+            	System.out.println("makeExecutor4");
                 executor = factory.makeExecutor(calg, execCtx);
+                System.out.println("makeExecutor5");
             } catch (AlgorithmException e) {
                 log.warn("Failed to create algorithm executor", e);
+                System.out.println("makeExecutor6");
                 throw new AlgorithmException("Failed to create executor for algorithm "
                         + calg.getQualifiedName() + ": " + e, e);
             }
         } else if (algorithm instanceof MathAlgorithm) {
+        	System.out.println("makeExecutor7");
             executor = new MathAlgorithmExecutor(algorithm, execCtx, (MathAlgorithm) algorithm);
         } else {
+        	System.out.println("makeExecutor8");
             throw new AlgorithmException("Algorithms of type " + algorithm.getClass() + " not yet implemented");
         }
 
@@ -368,21 +385,27 @@ public class AlgorithmManager extends AbstractProcessorService
 
     private AlgorithmExecutorFactory getFactory(CustomAlgorithm calg, AlgorithmExecutionContext execCtx) {
         String algLang = calg.getLanguage();
+        System.out.println("getFactory1");
         if (algLang == null) {
             throw new AlgorithmException("no language specified for algorithm "
                     + "'" + calg.getQualifiedName() + "'");
         }
+        System.out.println("getFactory2");
         AlgorithmExecutorFactory factory = factories.get(algLang);
         if (factory == null) {
+        	System.out.println("getFactory3");
             AlgorithmEngine eng = algorithmEngines.get(algLang);
             if (eng == null) {
                 throw new AlgorithmException("no algorithm engine found for language '" + algLang + "'");
             }
+            System.out.println("getFactory4");
             factory = eng.makeExecutorFactory(this, execCtx, algLang, config);
+            System.out.println("getFactory5");
             factories.put(algLang, factory);
             for (String s : factory.getLanguages()) {
                 factories.put(s, factory);
             }
+            System.out.println("getFactory6");
         }
         return factory;
     }

@@ -19,6 +19,13 @@
 					<Enumeration label="COMPLETION_ERROR_3" value="3" />
 				</EnumerationList>
 			</EnumeratedParameterType>
+			<AggregateParameterType name="Position_t">
+				<MemberList>
+					<Member name="Lat" typeRef="/dt/uint16"></Member>
+					<Member name="Lon" typeRef="/dt/uint16"></Member>
+					<Member name="Alt" typeRef="/dt/uint16"></Member>
+				</MemberList>
+			</AggregateParameterType>
 
 		</ParameterTypeSet>
 		<ParameterSet>
@@ -26,7 +33,7 @@
 			<Parameter parameterTypeRef="/dt/uint14" name="seqcount" />
 			<Parameter parameterTypeRef="/dt/uint8" name="type" />
 			<Parameter parameterTypeRef="/dt/uint8" name="subtype" />
-			<Parameter parameterTypeRef="/dt/uint16" name="counter" />
+			<Parameter parameterTypeRef="Position_t" name="Position" />
 			<Parameter parameterTypeRef="/dt/uint16" name="destination" />
 			<Parameter parameterTypeRef="/dt/uint8" name="time-rate" />
 			<Parameter parameterTypeRef="/dt/uint8" name="time-type" />
@@ -37,7 +44,10 @@
 			<Parameter parameterTypeRef="/dt/uint14" name="tc-ack-seq" />
 			<Parameter parameterTypeRef="/dt/uint32" name="tc-ack-acceptance-failure-code" />
 			<Parameter parameterTypeRef="start-failure-code" name="tc-ack-start-failure-code" />
-			<Parameter parameterTypeRef="completion-failure-code" name="tc-ack-completion-failure-code" />
+			<Parameter parameterTypeRef="completion-failure-code" name="tc-ack-completion-failure-code" /><Parameter
+				parameterTypeRef="/dt/uint16" name="counter">
+	<ParameterProperties dataSource="derived" persistence="true"></ParameterProperties>
+</Parameter>
 		</ParameterSet>
 		<ContainerSet>
 			<SequenceContainer name="ccsds">
@@ -172,6 +182,28 @@
 				</BaseContainer>
 			</SequenceContainer>
 		</ContainerSet>
+		<AlgorithmSet>
+			<CustomAlgorithm name="HelloWorld">
+				<AlgorithmText language="JavaScript">
+				//print("Counter" + Counter);
+				NewPosition.value["Lat"] = Counter.value * 10;
+				//print("NewPosition-->" + NewPosition.value);
+				//print("\n");
+				//print("NewPosition" + NewPosition);
+				</AlgorithmText>
+				<InputSet>
+					<InputParameterInstanceRef
+						parameterRef="counter" inputName="Counter" />
+				</InputSet>
+				<OutputSet>
+					<OutputParameterRef parameterRef="Position"
+						outputName="NewPosition">
+					</OutputParameterRef>
+				</OutputSet>
+				<TriggerSet>
+					<OnParameterUpdateTrigger parameterRef="/SIMULATOR/Altitude" />
+				</TriggerSet></CustomAlgorithm>
+		</AlgorithmSet>
 	</TelemetryMetaData>
 	<CommandMetaData>
 		<MetaCommandSet>
