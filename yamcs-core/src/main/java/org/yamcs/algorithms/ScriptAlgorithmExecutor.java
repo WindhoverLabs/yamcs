@@ -23,10 +23,13 @@ import org.yamcs.mdb.DataEncodingDecoder;
 import org.yamcs.mdb.ParameterTypeProcessor;
 import org.yamcs.mdb.ParameterTypeUtils;
 import org.yamcs.mdb.ProcessingData;
+import org.yamcs.parameter.AggregateValue;
 import org.yamcs.parameter.ParameterValue;
 import org.yamcs.parameter.RawEngValue;
 import org.yamcs.parameter.Value;
 import org.yamcs.protobuf.Yamcs.Value.Type;
+import org.yamcs.utils.ValueUtility;
+import org.yamcs.xtce.AggregateParameterType;
 import org.yamcs.xtce.BaseDataType;
 import org.yamcs.xtce.CustomAlgorithm;
 import org.yamcs.xtce.DataEncoding;
@@ -34,6 +37,7 @@ import org.yamcs.xtce.InputParameter;
 import org.yamcs.xtce.OutputParameter;
 import org.yamcs.xtce.Parameter;
 import org.yamcs.xtce.ParameterType;
+import org.yamcs.xtce.util.AggregateMemberNames;
 
 /**
  * Represents the execution context of one algorithm. An AlgorithmExecutor is reused upon each update of one or more of
@@ -129,20 +133,13 @@ public class ScriptAlgorithmExecutor extends AbstractAlgorithmExecutor {
 
             List<ParameterValue> outputValues = new ArrayList<>();
             List<OutputParameter> outputList = algorithmDef.getOutputList();
-//            System.out.println("execute0");
             for (int k = 0; k < numOutputs; k++) {
                 OutputParameter outputParameter = outputList.get(k);
-//                System.out.println("execute1");
                 OutputValueBinding res = (OutputValueBinding) functionArgs[numInputs + k];
-//                System.out.println("res.value-->" + res.value);
-//                System.out.println("res.updated-->" + res.updated);
-                if (res.updated && (res.value != null || res.rawValue != null)) {
-//                	System.out.println("execute2");
+                if (res.updated && (res.value != null || res.rawValue != null | res.values != null)) {
                     ParameterValue pv = convertScriptOutputToParameterValue(outputParameter.getParameter(), res);
-//                    System.out.println("execute3");
                     pv.setAcquisitionTime(acqTime);
                     pv.setGenerationTime(genTime);
-//                    System.out.println("execute4");
                     outputValues.add(pv);
                 }
             }
@@ -235,13 +232,11 @@ public class ScriptAlgorithmExecutor extends AbstractAlgorithmExecutor {
         ParameterType ptype = parameter.getParameterType();
         DataEncoding de = null;
         
-//        System.out.println("convertScriptOutputToParameterValue1");
         if (binding.rawValue != null) {
         	System.out.println("convertScriptOutputToParameterValue2");
             if (ptype instanceof BaseDataType) {
                 de = ((BaseDataType) ptype).getEncoding();
             }
-            System.out.println("convertScriptOutputToParameterValue3");
 
             if (de != null) {
             	System.out.println("convertScriptOutputToParameterValue4");
@@ -253,7 +248,6 @@ public class ScriptAlgorithmExecutor extends AbstractAlgorithmExecutor {
                                     + "'" + binding.value + "' of type " + binding.value.getClass()
                                     + " into values for the data encoding " + de);
                 } else {
-//                	System.out.println("convertScriptOutputToParameterValue6");
                     pval.setRawValue(rawV);
                     if (binding.value == null) {
                         parameterTypeProcessor.calibrate(pval);
@@ -265,10 +259,29 @@ public class ScriptAlgorithmExecutor extends AbstractAlgorithmExecutor {
             }
         }
         
-//    	System.out.println("convertScriptOutputToParameterValue7");
-
-        if (binding.value != null) {
+        if (binding.value != null || binding.values != null) {
             Value v = ParameterTypeUtils.getEngValue(ptype, binding.value);
+        	
+        	if(binding.values != null) {
+                if (ptype instanceof AggregateParameterType) {
+                	AggregateParameterType aggrType =  ((AggregateParameterType)ptype);
+                	AggregateMemberNames aggrMbr = aggrType.getMemberNames();
+                	AggregateValue ev = new AggregateValue(aggrMbr);
+                	for(var k: binding.values.entrySet()) {
+                		Value memberValue = ParameterTypeUtils.getEngValue((ParameterType) aggrType.getMember(k.getKey()).getType(), 
+                															k.getValue());
+                		ev.setMemberValue(k.getKey(), memberValue);
+                	}
+                	
+                	v = ev;
+                }
+                else {
+                    throw new InvalidAlgorithmOutputException(parameter, binding,
+                            "When using the values map, OutputParameter(s) MUST be of type  " +
+                            		AggregateParameterType.class.toString());
+                }
+            	
+        	}
             if (v == null) {
                 throw new InvalidAlgorithmOutputException(parameter, binding,
                         "Cannot convert algorithm output value "

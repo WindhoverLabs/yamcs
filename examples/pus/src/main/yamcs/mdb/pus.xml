@@ -184,17 +184,20 @@
 		</ContainerSet>
 		<AlgorithmSet>
 			<CustomAlgorithm name="HelloWorld">
-				<AlgorithmText language="JavaScript">
-				//print("Counter" + Counter);
-				NewPosition.value["Lat"] = Counter.value * 10;
-				//print("NewPosition-->" + NewPosition.value);
-				//print("\n");
-				//print("NewPosition" + NewPosition);
-				</AlgorithmText>
+				
 				<InputSet>
 					<InputParameterInstanceRef
 						parameterRef="counter" inputName="Counter" />
 				</InputSet>
+				<AlgorithmText language="JavaScript">
+				//print("Counter" + Counter);
+				NewPosition.values["Lat"] = Counter.value * 12;
+				NewPosition.values["Lon"] = Counter.value * 6;
+				NewPosition.values["Alt"] = Counter.value * 3;
+				//print("NewPosition-->" + NewPosition.value);
+				//print("\n");
+				//print("NewPosition" + NewPosition);
+				</AlgorithmText>
 				<OutputSet>
 					<OutputParameterRef parameterRef="Position"
 						outputName="NewPosition">
