@@ -259,10 +259,10 @@ public class ScriptAlgorithmExecutor extends AbstractAlgorithmExecutor {
             }
         }
         
-        if (binding.value != null || binding.values != null) {
+        if (binding.value != null ||  !binding.values.isEmpty()) {
             Value v = ParameterTypeUtils.getEngValue(ptype, binding.value);
         	
-        	if(binding.values != null) {
+        	if(!binding.values.isEmpty()) {
                 if (ptype instanceof AggregateParameterType) {
                 	AggregateParameterType aggrType =  ((AggregateParameterType)ptype);
                 	AggregateMemberNames aggrMbr = aggrType.getMemberNames();

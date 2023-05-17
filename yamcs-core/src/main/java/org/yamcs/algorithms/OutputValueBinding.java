@@ -14,6 +14,10 @@ public class OutputValueBinding extends ValueBinding {
     // this to false, to prevent adding the output parameter to a delivery.
     public boolean updated = true;
     
+    // Whether the values map was updated. 
+    // TODO:Not sure if we should use this or not.
+    public boolean hasAggregateOutputs = false;
+    
     public HashMap<String, Object> values = new HashMap<String, Object>(); // Used for aggregate types
 
     @Override
