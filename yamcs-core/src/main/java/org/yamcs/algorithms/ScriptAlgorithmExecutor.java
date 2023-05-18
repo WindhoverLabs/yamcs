@@ -290,6 +290,7 @@ public class ScriptAlgorithmExecutor extends AbstractAlgorithmExecutor {
                                 + ptype.getQualifiedName() + "(" + ptype.getClass().getSimpleName() + ")");
             } else {
                 pval.setEngValue(v);
+                pval.setRawValue(v);
             }
         }
         return pval;
