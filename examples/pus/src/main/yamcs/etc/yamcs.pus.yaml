@@ -23,7 +23,7 @@ services:
   - class: org.yamcs.parameterarchive.ParameterArchive
     args:
       realtimeFiller: 
-        enabled: false
+        enabled: true
       backFiller:
         enabled: true
         warmupTime: 60

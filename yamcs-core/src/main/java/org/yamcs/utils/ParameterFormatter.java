@@ -132,6 +132,17 @@ public class ParameterFormatter implements Closeable {
      * @throws IOException
      */
     public void writeParameters(List<ParameterValueWithId> params) throws IOException {
+//    	System.out.println("params-->" + params);
+    	String valueTime = "2023-06-09T22:23:27.923z";
+    	String  timeFormat = "2023-06-09T22:42:38.083Z";
+    	for(ParameterValueWithId p : params) {
+			System.out.println("Value for Param:" + p.toGbpParameterValue().getEngValue().getUint32Value());
+//    		sb.append(" genTime: {").append(TimeEncoding.toString(generationTime)).append("}");
+//    		System.out.println("Parameter gen time-->" + TimeEncoding.toString(p.getParameterValue().getGenerationTime()));
+    		if(TimeEncoding.toString(p.getParameterValue().getGenerationTime()).equals(valueTime)) {
+    			System.out.println("Value for Param:" + p.toGbpParameterValue().getEngValue().getUint32Value());
+    		}
+    	}
         long t = params.get(0).getParameterValue().getGenerationTime();
         if ((timewindow == -1) || (t - lastLineInstant > timewindow)) {
             writeParameters();
@@ -151,6 +162,49 @@ public class ParameterFormatter implements Closeable {
         linesReceived++;
         ++unsavedLineCount;
     }
+    
+    
+    
+    /**
+     * adds new parameters - if they are written to the output buffer or not depends on the settings
+     * 
+     * @param params
+     * @throws IOException
+     */
+    public void writeParameter(ParameterValueWithId param) throws IOException {
+//    	System.out.println("params-->" + params);
+    	String valueTime = "2023-06-09T22:23:27.923z";
+    	String  timeFormat = "2023-06-09T22:42:38.083Z";
+//    	for(ParameterValueWithId p : params) {
+//			System.out.println("Value for Param:" + p.toGbpParameterValue().getEngValue().getUint32Value());
+////    		sb.append(" genTime: {").append(TimeEncoding.toString(generationTime)).append("}");
+////    		System.out.println("Parameter gen time-->" + TimeEncoding.toString(p.getParameterValue().getGenerationTime()));
+//    		if(TimeEncoding.toString(p.getParameterValue().getGenerationTime()).equals(valueTime)) {
+//    			System.out.println("Value for Param:" + p.toGbpParameterValue().getEngValue().getUint32Value());
+//    		}
+//    	}
+        long t = param.getParameterValue().getGenerationTime();
+        if ((timewindow == -1) || (t - lastLineInstant > timewindow)) {
+            writeParameters();
+            lastLineInstant = t;
+
+            if (!keepValues) {
+                for (Entry<NamedObjectId, ParameterValue> entry : subscribedParameters.entrySet()) {
+                    entry.setValue(null);
+                }
+            }
+        }
+
+//        for (int i = 0; i < params.size(); i++) {
+            ParameterValue pv = param.getParameterValue();
+            subscribedParameters.put(param.getId(), pv);
+//        }
+        linesReceived++;
+        ++unsavedLineCount;
+    }
+    
+    
+    
 
     protected void writeParameters() throws IOException {
         if (first) {
@@ -171,9 +225,10 @@ public class ParameterFormatter implements Closeable {
                 Value ev = pv.getEngValue();
                 if (ev != null) {
                     sb.append(ev.toString());
+                    System.out.println("ev value-->" + ev);
                     l.add(ev.toString());
                 } else {
-                    System.err.println("got parameter without an engineering value for " + entry.getKey());
+//                    System.err.println("got parameter without an engineering value for " + entry.getKey());
                     // skip=true;
                 }
                 if (printRaw) {

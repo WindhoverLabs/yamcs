@@ -74,6 +74,11 @@ abstract class AbstractArchiveFiller implements ParameterConsumer {
                 log.warn("Ignoring parameter without engineering value: {} ", pv.getParameterQualifiedName());
                 continue;
             }
+            else {
+            	if(pv.getParameterQualifiedName().equals("/PUS/Algo_counter")) {
+                	System.out.println("envValue:" + engValue);
+            	}
+            }
             BasicParameterList l = m.computeIfAbsent(t, x -> new BasicParameterList(parameterIdMap));
             l.add(pv);
         }

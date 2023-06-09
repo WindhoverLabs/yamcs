@@ -45,9 +45,12 @@
 			<Parameter parameterTypeRef="/dt/uint32" name="tc-ack-acceptance-failure-code" />
 			<Parameter parameterTypeRef="start-failure-code" name="tc-ack-start-failure-code" />
 			<Parameter parameterTypeRef="completion-failure-code" name="tc-ack-completion-failure-code" /><Parameter
-				parameterTypeRef="/dt/uint16" name="counter">
-	<ParameterProperties dataSource="derived" persistence="true"></ParameterProperties>
+				parameterTypeRef="/dt/uint16" name="Algo_counter" initialValue="0">
+				<ParameterProperties dataSource="telemetered"
+					persistence="true">
+				</ParameterProperties>
 </Parameter>
+			<Parameter parameterTypeRef="/dt/uint16" name="counter"></Parameter>
 		</ParameterSet>
 		<ContainerSet>
 			<SequenceContainer name="ccsds">
@@ -187,24 +190,25 @@
 				
 				<InputSet>
 					<InputParameterInstanceRef
-						parameterRef="counter" inputName="Counter" />
+						parameterRef="/SIMULATOR/BatteryVoltage1" inputName="Counter" />
 				</InputSet>
 				<AlgorithmText language="JavaScript">
 				//print("Counter" + Counter);
-				NewPosition.values["Lat"] = Counter.value * 12;
-				NewPosition.values["Lon"] = Counter.value * 6;
-				NewPosition.values["Alt"] = Counter.value * 3;
+				//NewPosition.values["Lat"] = Counter.value * 12;
+				//NewPosition.values["Lon"] = Counter.value * 6;
+				//NewPosition.values["Alt"] = Counter.value * 3;
 				//print("NewPosition-->" + NewPosition.value);
 				//print("\n");
 				//print("NewPosition" + NewPosition);
+				 //counter.value = Counter.value * 2;
 				</AlgorithmText>
 				<OutputSet>
-					<OutputParameterRef parameterRef="Position"
-						outputName="NewPosition">
+					<OutputParameterRef parameterRef="Algo_counter"
+						outputName="counter">
 					</OutputParameterRef>
 				</OutputSet>
 				<TriggerSet>
-					<OnParameterUpdateTrigger parameterRef="/SIMULATOR/Altitude" />
+					<OnParameterUpdateTrigger parameterRef="/SIMULATOR/BatteryVoltage1" />
 				</TriggerSet></CustomAlgorithm>
 		</AlgorithmSet>
 	</TelemetryMetaData>

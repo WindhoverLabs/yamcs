@@ -209,25 +209,49 @@ public class ParameterArchiveApi extends AbstractParameterArchiveApi<Context> {
     @Override
     public void listParameterHistory(Context ctx, ListParameterHistoryRequest request,
             Observer<ListParameterHistoryResponse> observer) {
+        System.out.println("listParameterHistory1");
         if (request.hasSource() && isReplayAsked(request.getSource())) {
+            System.out.println("listParameterHistory2");
             streamArchiveApi.listParameterHistory(ctx, request, observer);
+            System.out.println("listParameterHistory3");
             return;
         }
+        System.out.println("listParameterHistory4");
+
         YamcsServerInstance ysi = ManagementApi.verifyInstanceObj(request.getInstance());
+        System.out.println("listParameterHistory5");
+
 
         XtceDb mdb = XtceDbFactory.getInstance(ysi.getName());
+        System.out.println("listParameterHistory6");
+
         ParameterWithId requestedParamWithId = MdbApi.verifyParameterWithId(ctx, mdb, request.getName());
+        System.out.println("listParameterHistory7");
+
 
         int limit = request.hasLimit() ? request.getLimit() : 100;
+        System.out.println("listParameterHistory8");
+
 
         long start = 0;
+        System.out.println("listParameterHistory9");
+
         if (request.hasStart()) {
+            System.out.println("listParameterHistory10");
             start = TimeEncoding.fromProtobufTimestamp(request.getStart());
         }
+        System.out.println("listParameterHistory11");
+
         long stop = TimeEncoding.getWallclockTime();
+        System.out.println("listParameterHistory12");
+
         if (request.hasStop()) {
+            System.out.println("listParameterHistory13");
+
             stop = TimeEncoding.fromProtobufTimestamp(request.getStop());
         }
+        System.out.println("listParameterHistory14");
+
         boolean ascending = request.getOrder().equals("asc");
         if (request.hasNext()) {
             TimeSortedPageToken token = TimeSortedPageToken.decode(request.getNext());
@@ -237,15 +261,24 @@ public class ParameterArchiveApi extends AbstractParameterArchiveApi<Context> {
                 stop = token.time;
             }
         }
+        
+        System.out.println("listParameterHistory16");
 
         MultipleParameterRequest mpvr;
+        System.out.println("listParameterHistory17");
         ParameterArchive parchive = getParameterArchive(ysi);
+        System.out.println("listParameterHistory18");
         ParameterIdDb piddb = parchive.getParameterIdDb();
         String qn = requestedParamWithId.getQualifiedName();
+        System.out.println("listParameterHistory19");
         ParameterId[] pids = piddb.get(qn);
+        System.out.println("listParameterHistory20");
+
         if (pids != null) {
+            System.out.println("listParameterHistory21");
             mpvr = new MultipleParameterRequest(start, stop, pids, ascending);
         } else {
+            System.out.println("listParameterHistory22");
             log.debug("No parameter id found in the parameter archive for {}", qn);
             mpvr = null;
         }
@@ -253,23 +286,30 @@ public class ParameterArchiveApi extends AbstractParameterArchiveApi<Context> {
         // filtered data not to the input
         // one day the parameter archive will be smarter and do the filtering inside
         // mpvr.setLimit(limit);
-
+        System.out.println("listParameterHistory23");
         ParameterCache pcache = null;
         if (!request.getNorealtime()) {
             String processorName = request.hasProcessor() ? request.getProcessor() : DEFAULT_PROCESSOR;
+            System.out.println("listParameterHistory24");
             Processor processor = ysi.getProcessor(processorName);
             pcache = processor.getParameterCache();
         }
-
+        
+        System.out.println("listParameterHistory25");
         ListParameterHistoryResponse.Builder resultb = ListParameterHistoryResponse.newBuilder();
+        System.out.println("listParameterHistory26");
+
         final int fLimit = limit + 1; // one extra to detect continuation token
 
         ParameterReplayListener replayListener = new ParameterReplayListener(0, fLimit) {
             @Override
             public void onParameterData(ParameterValueWithId pvwid) {
+                System.out.println("listParameterHistory27");
                 if (resultb.getParameterCount() < fLimit - 1) {
+                    System.out.println("listParameterHistory28");
                     resultb.addParameter(pvwid.toGbpParameterValue());
                 } else {
+                    System.out.println("listParameterHistory29");
                     TimeSortedPageToken token = new TimeSortedPageToken(pvwid.getParameterValue().getGenerationTime());
                     resultb.setContinuationToken(token.encodeAsString());
                 }
@@ -303,6 +343,8 @@ public class ParameterArchiveApi extends AbstractParameterArchiveApi<Context> {
         } catch (DecodingException | RocksDBException | IOException e) {
             throw new InternalServerErrorException(e);
         }
+        
+        System.out.println("listParameterHistory");
 
         observer.complete(resultb.build());
     }

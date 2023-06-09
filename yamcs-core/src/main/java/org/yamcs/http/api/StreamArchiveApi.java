@@ -249,61 +249,83 @@ public class StreamArchiveApi extends AbstractStreamArchiveApi<Context> {
 
     @Override
     public void exportParameterValues(Context ctx, ExportParameterValuesRequest request, Observer<HttpBody> observer) {
+    	System.out.println("exportParameterValues1");
         String instance = ManagementApi.verifyInstance(request.getInstance());
-
+        System.out.println("exportParameterValues2");
         ReplayOptions repl = ReplayOptions.getAfapReplay();
-
+        System.out.println("exportParameterValues3");
         List<NamedObjectId> ids = new ArrayList<>();
         XtceDb mdb = XtceDbFactory.getInstance(instance);
         String namespace = null;
+        
+        System.out.println("exportParameterValues4");
 
         if (request.hasStart()) {
+        	System.out.println("exportParameterValues5");
             repl.setRangeStart(TimeEncoding.fromProtobufTimestamp(request.getStart()));
         }
         if (request.hasStop()) {
             repl.setRangeStop(TimeEncoding.fromProtobufTimestamp(request.getStop()));
+            System.out.println("exportParameterValues6");
         }
         for (String id : request.getParametersList()) {
+        	System.out.println("exportParameterValues7");
             ParameterWithId paramWithId = MdbApi.verifyParameterWithId(ctx, mdb, id);
             ids.add(paramWithId.getId());
+            System.out.println("exportParameterValues8");
         }
         if (request.hasNamespace()) {
+        	System.out.println("exportParameterValues9");
             namespace = request.getNamespace();
         }
-
+        System.out.println("exportParameterValues10");
         if (ids.isEmpty()) {
+        	System.out.println("exportParameterValues11");
             for (Parameter p : mdb.getParameters()) {
+            	System.out.println("exportParameterValues12");
                 if (!ctx.user.hasObjectPrivilege(ObjectPrivilegeType.ReadParameter, p.getQualifiedName())) {
+                	System.out.println("exportParameterValues13");
                     continue;
                 }
                 if (namespace != null) {
+                	System.out.println("exportParameterValues14");
                     String alias = p.getAlias(namespace);
                     if (alias != null) {
+                    	System.out.println("exportParameterValues15");
                         ids.add(NamedObjectId.newBuilder().setNamespace(namespace).setName(alias).build());
                     }
                 } else {
+                	System.out.println("exportParameterValues16");
                     ids.add(NamedObjectId.newBuilder().setName(p.getQualifiedName()).build());
                 }
             }
+            System.out.println("exportParameterValues17");
         }
+        System.out.println("exportParameterValues18");
         repl.setParameterRequest(ParameterReplayRequest.newBuilder().addAllNameFilter(ids).build());
-
+        System.out.println("exportParameterValues19");
         String filename;
         String dateString = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
+        System.out.println("exportParameterValues20");
         if (ids.size() == 1) {
             NamedObjectId id = ids.get(0);
+            System.out.println("exportParameterValues21");
             String parameterName = id.hasNamespace() ? id.getName() : id.getName().substring(1);
             filename = parameterName.replace('/', '_') + "_export_" + dateString + ".csv";
         } else {
+        	System.out.println("exportParameterValues22");
             filename = "parameter_export_" + dateString + ".csv";
         }
 
         boolean addRaw = false;
         boolean addMonitoring = false;
         for (String extra : request.getExtraList()) {
+        	System.out.println("exportParameterValues23");
             if (extra.equals("raw")) {
                 addRaw = true;
+                System.out.println("exportParameterValues24");
             } else if (extra.equals("monitoring")) {
+            	System.out.println("exportParameterValues25");
                 addMonitoring = true;
             } else {
                 throw new BadRequestException("Unexpected option for parameter 'extra': " + extra);
@@ -311,6 +333,7 @@ public class StreamArchiveApi extends AbstractStreamArchiveApi<Context> {
         }
         CsvParameterStreamer l = new CsvParameterStreamer(
                 observer, filename, ids, addRaw, addMonitoring);
+        System.out.println("exportParameterValues26");
         if (request.hasDelimiter()) {
             switch (request.getDelimiter()) {
             case "TAB":
@@ -326,8 +349,11 @@ public class StreamArchiveApi extends AbstractStreamArchiveApi<Context> {
                 throw new BadRequestException("Unexpected column delimiter");
             }
         }
+        System.out.println("exportParameterValues27");
         observer.setCancelHandler(l::requestReplayAbortion);
+        System.out.println("exportParameterValues28");
         ReplayFactory.replay(instance, ctx.user, repl, l);
+        System.out.println("exportParameterValues29");
     }
 
     private static ReplayOptions toParameterReplayRequest(NamedObjectId parameterId, long start, long stop,
@@ -381,14 +407,40 @@ public class StreamArchiveApi extends AbstractStreamArchiveApi<Context> {
 
         @Override
         protected void onParameterData(List<ParameterValueWithId> params) {
-
+//        	for(ParameterValueWithId p: params) {
+//        		System.out.println("p on onParameterData-->" + p.getParameterValue());
+//        	}
+//            ByteString.Output data = ByteString.newOutput();
+//            try (Writer writer = new OutputStreamWriter(data, StandardCharsets.UTF_8);
+//                    ParameterFormatter formatter = new ParameterFormatter(writer, ids, columnDelimiter)) {
+//                formatter.setWriteHeader(recordCount == 0);
+//                formatter.setPrintRaw(addRaw);
+//                formatter.setPrintMonitoring(addMonitoring);
+//                formatter.writeParameters(params);
+//            } catch (IOException e) {
+//                throw new UncheckedIOException(e);
+//            }
+//
+//            HttpBody body = HttpBody.newBuilder()
+//                    .setData(data.toByteString())
+//                    .build();
+//            observer.next(body);
+//            recordCount++;
+        }
+        
+        
+        @Override
+        protected void onParameterData(ParameterValueWithId p) {
+//        	for(ParameterValueWithId p: params) {
+//        		System.out.println("p on onParameterData-->" + p.getParameterValue());
+//        	}
             ByteString.Output data = ByteString.newOutput();
             try (Writer writer = new OutputStreamWriter(data, StandardCharsets.UTF_8);
                     ParameterFormatter formatter = new ParameterFormatter(writer, ids, columnDelimiter)) {
                 formatter.setWriteHeader(recordCount == 0);
                 formatter.setPrintRaw(addRaw);
                 formatter.setPrintMonitoring(addMonitoring);
-                formatter.writeParameters(params);
+                formatter.writeParameter(p);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

@@ -147,7 +147,8 @@ public class AlgorithmManager extends AbstractProcessorService
     @Override
     public void init(Processor processor, YConfiguration config, Object spec) {
         super.init(processor, config, spec);
-
+        
+        System.out.println("processor-->" + processor);
         this.eventProducer = processor.getProcessorData().getEventProducer();
         this.parameterProcessorManager = processor.getParameterProcessorManager();
 
@@ -285,7 +286,7 @@ public class AlgorithmManager extends AbstractProcessorService
 //        System.out.println("activateAlgorithm15");
         subscribeRequiredParameters(activeAlgo);
         execCtx.addAlgorithm(activeAlgo);
-//        System.out.println("activateAlgorithm16");
+        System.out.println("activateAlgorithm16");
         return activeAlgo;
     }
 
@@ -464,6 +465,7 @@ public class AlgorithmManager extends AbstractProcessorService
         } else {
             p = outParamIndex.get(paraId.getName());
         }
+        System.out.println("p from algo-->" + p);
         if (p != null) {
             return p;
         } else {
