@@ -1,0 +1,44 @@
+services:
+    - class: org.yamcs.replication.ReplicationSlave
+      args:
+          tcpRole: client
+          masterHost: localhost
+          masterPort: 8099
+          masterInstance: node1
+          enableTls: false
+          reconnectionIntervalSec: 30
+          streams: ["tm_realtime", "sys_param"]
+          lastTxFile: "slave-lastid.txt"
+
+mdb:
+    # Configuration of the active loaders
+    # Valid loaders are: sheet, xtce or fully qualified name of the class
+    - type: "sheet"
+      spec: "mdb/simulator-ccsds.xls"
+      subLoaders:
+          - type: "sheet"
+            spec: "mdb/landing.xls"
+    #Loads the performance testing mission database
+    - type: "org.yamcs.simulator.PerfMdbLoader"
+      args:
+         numPackets: 100
+         packetSize: 1476
+
+
+
+streamConfig:
+    tm:
+        - name: "tm_realtime"
+          processor: "realtime"
+        - name: "tm2_realtime"
+          rootContainer: "/YSS/SIMULATOR/tm2_container"
+          processor: "realtime"
+        - name: "tm_dump"
+    invalidTm: "invalid_tm_stream"
+    cmdHist: ["cmdhist_realtime", "cmdhist_dump"]
+    event: ["events_realtime", "events_dump"]
+    param: ["pp_realtime", "pp_tse", "sys_param", "proc_param"]
+    parameterAlarm: ["alarms_realtime"]
+    eventAlarm: ["event_alarms_realtime"]
+    tc: ["tc_realtime"]
+
