@@ -102,8 +102,17 @@ public class ParameterReplayHandler implements ReplayHandler {
             Parameter p = xtceDb.getParameter(pv.getParameterQualifiedName());
             if (p == null) {
                 if (XtceDb.isSystemParameter(pv.getParameterQualifiedName())) {
-                    p = SystemParametersService.createSystemParameter(xtceDb, pv.getParameterQualifiedName(),
-                            pv.getEngValue().getType(), null);
+                	try 
+                	{
+                        p = SystemParametersService.createSystemParameter(xtceDb, pv.getParameterQualifiedName(),
+                                pv.getEngValue().getType(), null);
+                	}
+                	catch(Exception e ) 
+                	{
+                        log.info("Cannot find a parameter with fqn {}(Most likely a path to a drive that does not exist anymore?)", 
+                        		pv.getParameterQualifiedName());
+                        continue;
+                	}
                 } else {
                     log.info("Cannot find a parameter with fqn {}", pv.getParameterQualifiedName());
                     continue;
