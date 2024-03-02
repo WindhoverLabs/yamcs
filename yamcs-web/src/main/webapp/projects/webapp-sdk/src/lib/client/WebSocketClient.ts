@@ -34,7 +34,12 @@ export class WebSocketClient {
     if (currentLocation.protocol === 'https:') {
       url = 'wss://';
     }
-    url += `${currentLocation.host}${apiUrl}/websocket`;
+    // url += `${currentLocation.host}${apiUrl}/websocket`;
+    // ws://localhost:8090/api/websocket
+
+    url += `${apiUrl}`;
+
+    url = "ws://localhost:8090/api/websocket"
 
     this.webSocket$ = webSocket({
       url,
