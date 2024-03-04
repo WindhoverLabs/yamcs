@@ -241,9 +241,13 @@ export default class YamcsClient implements HttpHandler {
     readonly baseHref = '/',
     private frameLossListener: FrameLossListener,
   ) {
-    // this.apiUrl = `${this.baseHref}api`;
+    // this.apiUrl = `http://${window.location.hostname}:8090/api`;
 
-    this.apiUrl = `http://localhost:8090/api/websocket`;
+    this.apiUrl  = baseHref;
+
+    this.apiUrl += '/api'
+
+    // this.apiUrl = `http://localhost:8090/api/websocket`;
     this.authUrl = `${this.baseHref}auth`;
 
     console.log("apiUrl:" + this.apiUrl);
