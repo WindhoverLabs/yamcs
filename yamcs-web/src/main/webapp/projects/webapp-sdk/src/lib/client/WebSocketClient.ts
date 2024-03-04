@@ -39,7 +39,7 @@ export class WebSocketClient {
 
     url += `${apiUrl}`;
 
-    url = "ws://localhost:8090/api/websocket"
+    url = `ws://${currentLocation.hostname}:8090/api/websocket`
 
     this.webSocket$ = webSocket({
       url,
