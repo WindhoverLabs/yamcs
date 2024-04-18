@@ -87,7 +87,7 @@ function getKWatts(amps, voltage)
 ```
 
 An Algorithm can be written as the following:
-```
+```JS
 Watts.value = getWatts(Amps.value, Voltage.value);
 KWatts.value = getKWatts(Amps.value, Voltage.value);
 ```
