@@ -91,3 +91,5 @@ An Algorithm can be written as the following:
 Watts.value = getWatts(Amps.value, Voltage.value);
 KWatts.value = getKWatts(Amps.value, Voltage.value);
 ```
+
+Full algorithm example in [XTCE](https://github.com/WindhoverLabs/yamcs/blob/algorithm_lib_example/examples/pus/src/main/yamcs/mdb/landing.xml#L563)
