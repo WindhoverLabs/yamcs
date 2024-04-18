@@ -16,6 +16,8 @@ realtime:
         libraries:
           JavaScript:
             - "mdb/powerlib.js"
+          python:
+            - "mdb/powerlib.js"
     # implements provider of parameters from sys_param stream (these are collected and sent on this stream by SystemParametersService)
     - class: org.yamcs.parameter.LocalParameterManager
   config:

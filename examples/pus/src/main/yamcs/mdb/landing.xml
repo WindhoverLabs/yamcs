@@ -172,6 +172,13 @@
 			<Parameter
 				name="BusKWatts" parameterTypeRef="uint32KW">
 </Parameter>
+
+			<Parameter
+				name="PyBusWatts" parameterTypeRef="uint32W">
+</Parameter>
+			<Parameter
+				name="PyBusKWatts" parameterTypeRef="uint32KW">
+</Parameter>
 			<Parameter parameterTypeRef="uint8A" name="TotalSystemCurrent" />
 			<Parameter parameterTypeRef="uint8V" name="BatteryVoltage1" />
 			<Parameter parameterTypeRef="uint8C" name="BatteryTemperature1" />
@@ -550,6 +557,32 @@ KWatts.value = getKWatts(Amps.value, Voltage.value);
 				<TriggerSet>
 					<OnParameterUpdateTrigger parameterRef="BusCurrent" />
 				</TriggerSet></CustomAlgorithm>
+				
+				
+				
+							<CustomAlgorithm name="PythonBusPower">
+				<AlgorithmText language="python">
+Watts.value = getWatts(Amps.value, Voltage.value)
+KWatts.value = getKWatts(Amps.value, Voltage.value)
+</AlgorithmText>
+				<InputSet>
+					<InputParameterInstanceRef parameterRef='BusCurrent'
+						inputName="Amps" /><InputParameterInstanceRef
+						parameterRef="BusVoltage" inputName="Voltage" />
+				</InputSet>
+				<OutputSet>
+					<OutputParameterRef parameterRef="PyBusWatts"
+						outputName="Watts">
+					</OutputParameterRef>
+					<OutputParameterRef parameterRef="PyBusKWatts"
+						outputName="KWatts">
+					</OutputParameterRef>
+				</OutputSet>
+				<TriggerSet>
+					<OnParameterUpdateTrigger parameterRef="BusCurrent" />
+				</TriggerSet></CustomAlgorithm>
+				
+				
 		</AlgorithmSet>
 	</TelemetryMetaData>
 	<CommandMetaData>
