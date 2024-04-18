@@ -67,7 +67,7 @@ Configure your `processor.yaml` as shown below:
           JavaScript:
             - "mdb/powerlib.js"
           python:
-            - "mdb/powerlib.js"
+            - "mdb/powerlib.py"
 ```
 
 For Python ensure you place the standalone [Jython Jar](https://mvnrepository.com/artifact/org.python/jython-standalone) in the CLASSPATH 
