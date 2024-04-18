@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<SpaceSystem name="SIMULATOR">
+<SpaceSystem name="SIMULATOR" xmlns="http://www.omg.org/spec/XTCE/20180204" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.omg.org/spec/XTCE/20180204 https://www.omg.org/spec/XTCE/20180204/SpaceSystem.xsd">
 	<Header validationStatus="Unknown" version="1.2" date="2020-11-26T03:11:27Z">
 	</Header>
 	<TelemetryMetaData>
@@ -59,6 +60,17 @@
 			<IntegerParameterType name="uint8V" baseType="/dt/uint8">
 				<UnitSet>
 					<Unit>V</Unit>
+				</UnitSet>
+			</IntegerParameterType>
+			<IntegerParameterType name="uint32W" baseType="/dt/uint32">
+				<UnitSet>
+					<Unit>W</Unit>
+				</UnitSet>
+			</IntegerParameterType>
+			
+			<IntegerParameterType name="uint32KW" baseType="/dt/uint32">
+				<UnitSet>
+					<Unit>KW</Unit>
 				</UnitSet>
 			</IntegerParameterType>
 			<FloatParameterType signed="false" name="BatteryVoltage2_BatteryVoltage2_BatteryVoltage2">
@@ -154,6 +166,12 @@
 			<Parameter parameterTypeRef="/dt/uint8" name="BusStatus" />
 			<Parameter parameterTypeRef="uint8V" name="BusVoltage" />
 			<Parameter parameterTypeRef="uint8A" name="BusCurrent" />
+			<Parameter
+				name="BusWatts" parameterTypeRef="uint32W">
+</Parameter>
+			<Parameter
+				name="BusKWatts" parameterTypeRef="uint32KW">
+</Parameter>
 			<Parameter parameterTypeRef="uint8A" name="TotalSystemCurrent" />
 			<Parameter parameterTypeRef="uint8V" name="BatteryVoltage1" />
 			<Parameter parameterTypeRef="uint8C" name="BatteryTemperature1" />
@@ -177,6 +195,8 @@
 			<Parameter parameterTypeRef="uint8V" name="PrimBusVoltage2" />
 			<Parameter parameterTypeRef="uint8A" name="PrimBusCurrent2" />
 			<Parameter parameterTypeRef="uint8V" name="SecBusVoltage2" />
+			
+			
 			<Parameter parameterTypeRef="uint8A" name="SecBusCurrent2" />
 			<Parameter parameterTypeRef="uint8V" name="SecBusVoltage3" />
 			<Parameter parameterTypeRef="uint8A" name="SecBusCurrent3" />
@@ -508,6 +528,29 @@
 				</BaseContainer>
 			</SequenceContainer>
 		</ContainerSet>
+		<AlgorithmSet>
+			<CustomAlgorithm name="BusPower">
+				<AlgorithmText language="JavaScript">
+Watts.value = getWatts(Amps.value, Voltage.value);
+KWatts.value = getKWatts(Amps.value, Voltage.value);
+</AlgorithmText>
+				<InputSet>
+					<InputParameterInstanceRef parameterRef='BusCurrent'
+						inputName="Amps" /><InputParameterInstanceRef
+						parameterRef="BusVoltage" inputName="Voltage" />
+				</InputSet>
+				<OutputSet>
+					<OutputParameterRef parameterRef="BusWatts"
+						outputName="Watts">
+					</OutputParameterRef>
+					<OutputParameterRef parameterRef="BusKWatts"
+						outputName="KWatts">
+					</OutputParameterRef>
+				</OutputSet>
+				<TriggerSet>
+					<OnParameterUpdateTrigger parameterRef="BusCurrent" />
+				</TriggerSet></CustomAlgorithm>
+		</AlgorithmSet>
 	</TelemetryMetaData>
 	<CommandMetaData>
 		<ArgumentTypeSet>

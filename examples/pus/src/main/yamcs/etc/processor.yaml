@@ -12,6 +12,10 @@ realtime:
     - class: org.yamcs.StreamTcCommandReleaser
     - class: org.yamcs.tctm.StreamParameterProvider
     - class: org.yamcs.algorithms.AlgorithmManager
+      args:
+        libraries:
+          JavaScript:
+            - "mdb/powerlib.js"
     # implements provider of parameters from sys_param stream (these are collected and sent on this stream by SystemParametersService)
     - class: org.yamcs.parameter.LocalParameterManager
   config:
