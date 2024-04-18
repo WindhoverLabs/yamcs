@@ -55,3 +55,39 @@ When Yamcs started successfully, you can visit the built-in web interface by nav
 ## Contributions
 
 While Yamcs is managed and developed by Space Applications Services, we also consider pull requests from other contributors. For non-trivial patches we ask you to sign our [CLA](https://yamcs.org/static/Yamcs_Contributor_Agreement_v2.0.pdf).
+
+
+## Adding Algorithms With Shared Code
+
+Configure your `processor.yaml` as shown below:
+```YAML
+    - class: org.yamcs.algorithms.AlgorithmManager
+      args:
+        libraries:
+          JavaScript:
+            - "mdb/powerlib.js"
+          python:
+            - "mdb/powerlib.js"
+```
+
+For Python ensure you place the standalone [Jython Jar](https://mvnrepository.com/artifact/org.python/jython-standalone) in the CLASSPATH 
+
+
+Assuming a `powerlib.js` such as:
+```JS
+function getWatts(amps, voltage)
+{
+    return amps * voltage;
+}
+
+function getKWatts(amps, voltage)
+{
+    return ((amps * voltage) * 0.001);
+}
+```
+
+An Algorithm can be written as the following:
+```
+Watts.value = getWatts(Amps.value, Voltage.value);
+KWatts.value = getKWatts(Amps.value, Voltage.value);
+```
