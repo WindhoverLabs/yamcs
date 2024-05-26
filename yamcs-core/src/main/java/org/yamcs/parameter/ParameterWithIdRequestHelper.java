@@ -311,6 +311,8 @@ public class ParameterWithIdRequestHelper implements ParameterConsumer {
      */
     @Override
     public void updateItems(int subscriptionId, List<ParameterValue> items) {
+    	System.out.println("updateItems:" +  items);
+    	System.out.println("updateItems call stack:" + Arrays.toString(Thread.currentThread().getStackTrace()));
         if (subscriptionId == subscribeAllId) {
             updateAllSubscription(subscriptionId, items);
             return;

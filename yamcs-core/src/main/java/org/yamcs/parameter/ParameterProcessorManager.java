@@ -210,12 +210,15 @@ public class ParameterProcessorManager extends AbstractService implements Parame
 
     public void process(ProcessingData processingData) {
         ParameterValueList pvlist = processingData.getTmParams();
+//        System.out.println("process pvlist1:" + pvlist);
         log.trace("Received TM data with {} parameters", pvlist.size);
         if (alarmChecker != null) {
             alarmChecker.performAlarmChecking(processingData, pvlist.iterator());
         }
         BitSet bitset = new BitSet();
         bitset.or(subscribeAll);
+        
+//        System.out.println("process pvlist2:" + pvlist);
 
         for (ParameterValue pv : pvlist) {
             BitSet bitset1 = param2SubscriptionMap.get(pv.getParameter());
@@ -263,6 +266,8 @@ public class ParameterProcessorManager extends AbstractService implements Parame
         if (parameterCache != null) {
             parameterCache.update(pvlist);
         }
+        
+//        System.out.println("process pvlist3:" + pvlist);
         lastValueCache.addAll(pvlist);
     }
 

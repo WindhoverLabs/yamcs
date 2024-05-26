@@ -61,6 +61,8 @@ public class StreamParameterSender {
     public void updateParameters(long gentime, String group, int seqNum, Collection<ParameterValue> params) {
         TupleDefinition tdef = StandardTupleDefinitions.PARAMETER.copy();
         List<Object> cols = new ArrayList<>(4 + params.size());
+        
+        System.out.println("paramss:" + params);
         cols.add(gentime);
         cols.add(group);
         cols.add(seqNum);

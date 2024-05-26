@@ -94,6 +94,8 @@ public class StreamParameterProvider extends AbstractProcessorService implements
     @Override
     public void onTuple(Stream s, Tuple tuple) {// the definition of the tuple is in PpProviderAdapter
         ProcessingData data = ProcessingData.createForTmProcessing(processor.getLastValueCache());
+        
+        System.out.println("onTuple**1:" + tuple.size());
 
         for (int i = 4; i < tuple.size(); i++) {
             Object o = tuple.getColumn(i);
@@ -109,21 +111,32 @@ public class StreamParameterProvider extends AbstractProcessorService implements
                 pv = BasicParameterValue.fromGpb(ppdef, gpv);
             } else if (o instanceof ParameterValue) {
                 pv = (ParameterValue) o;
+//                System.out.println("ParameterValue**1:");
                 if (pv.getParameter() == null) {
                     String fqn = pv.getParameterQualifiedName();
                     Parameter ppdef = xtceDb.getParameter(fqn);
+                    System.out.println("ParameterValue**2:" + fqn);
                     if (ppdef == null) {
                         if (XtceDb.isSystemParameter(fqn)) {
                             Value engValue = pv.getEngValue();
+                            System.out.println("ParameterValue**3:" + fqn);
                             ppdef = SystemParametersService.createSystemParameter(xtceDb, fqn, engValue);
                         } else {
                             log.trace("Ignoring unknown parameter {}", fqn);
                             continue;
                         }
+                        
+                        System.out.println("ParameterValue**4:" + fqn);
                     }
+                    System.out.println("ParameterValue**5:" + fqn);
                     pv.setParameter(ppdef);
                 }
+                else 
+                {
+//                    System.out.println("ParameterValue**7:" + pv);
+                }
             } else {
+                System.out.println("ParameterValue**6:"+ o.getClass());
                 log.warn("Received data that is not parameter value but {}", o.getClass());
                 continue;
             }
@@ -131,6 +144,7 @@ public class StreamParameterProvider extends AbstractProcessorService implements
             if (pv.getEngValue() == null && pv.getRawValue() != null) {
                 ptypeProcessor.calibrate(pv);
             }
+            System.out.println("StreamParameterProvider PV:" + pv);
             data.addTmParam(pv);
         }
         ppm.process(data);
@@ -153,9 +167,12 @@ public class StreamParameterProvider extends AbstractProcessorService implements
 
     @Override
     public boolean canProvide(NamedObjectId id) {
+    	System.out.println("CanProvide1:" + id.toString());
         if (xtceDb.getParameter(id) != null) {
+        	System.out.println("CanProvide2:" + id.toString());
             return true;
         } else {
+        	System.out.println("CanProvide3:" + id.toString());
             return false;
         }
     }

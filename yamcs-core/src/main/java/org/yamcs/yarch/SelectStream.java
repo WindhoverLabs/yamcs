@@ -69,6 +69,8 @@ public class SelectStream extends Stream implements StreamSubscriber {
     @Override
     public void onTuple(Stream stream, Tuple t) {
         if (whereExp != null) {
+        	System.out.println("whereExp:" + whereExp.getDefinition());
+        	System.out.println("whereExp name:" + whereExp.getDefinition().name);
             Boolean v = (Boolean) whereExp.getValue(t);
             if (v == null || !v) {
                 return;

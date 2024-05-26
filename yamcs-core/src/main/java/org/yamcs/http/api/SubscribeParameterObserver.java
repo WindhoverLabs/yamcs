@@ -48,18 +48,24 @@ public class SubscribeParameterObserver implements Observer<SubscribeParametersR
     public SubscribeParameterObserver(User user, Observer<SubscribeParametersData> responseObserver) {
         this.user = user;
         this.responseObserver = responseObserver;
+        
+        System.out.println("SubscribeParameterObserver%%%%1"); 
     }
 
     @Override
     public void next(SubscribeParametersRequest request) {
+        System.out.println("SubscribeParameterObserver%%%%2"); 
         if (request.hasMaxBytes()) {
             maxBytes = request.getMaxBytes();
         }
+        System.out.println("SubscribeParameterObserver%%%%3"); 
 
         if (pidrm == null) {
             Processor processor = ProcessingApi.verifyProcessor(request.getInstance(), request.getProcessor());
             ParameterRequestManager requestManager = processor.getParameterRequestManager();
+            System.out.println("pidrm:" + pidrm);
             pidrm = new ParameterWithIdRequestHelper(requestManager, (subscriptionId, params) -> {
+            	System.out.println("subscriptionId:" + subscriptionId);
                 if (params.isEmpty()) {
                     return;
                 }
@@ -74,6 +80,8 @@ public class SubscribeParameterObserver implements Observer<SubscribeParametersR
                 responseObserver.next(datab.build());
             });
         }
+        
+        System.out.println("SubscribeParameterObserver%%%%4"); 
 
         Action action = Action.REPLACE;
         if (request.hasAction()) {
@@ -83,20 +91,24 @@ public class SubscribeParameterObserver implements Observer<SubscribeParametersR
         try {
             List<NamedObjectId> idList = request.getIdList();
             List<NamedObjectId> invalid = new ArrayList<>();
+            System.out.println("SubscribeParameterObserver%%%%5"); 
             try {
                 updateSubscription(action, idList, request.getUpdateOnExpiration());
+                System.out.println("SubscribeParameterObserver%%%%6"); 
             } catch (InvalidIdentification e) {
                 invalid.addAll(e.getInvalidParameters());
-
+                System.out.println("SubscribeParameterObserver%%%%7"); 
                 if (!request.hasAbortOnInvalid() || request.getAbortOnInvalid()) {
                     BadRequestException ex = new BadRequestException(e);
                     ex.setDetail(NamedObjectList.newBuilder().addAllList(invalid).build());
                     responseObserver.completeExceptionally(ex);
+                    System.out.println("SubscribeParameterObserver%%%%8"); 
                 } else {
                     if (idList.size() == e.getInvalidParameters().size()) {
                         log.warn("Received subscribe attempt with only invalid parameters");
                         idList = Collections.emptyList();
                     } else {
+                        System.out.println("SubscribeParameterObserver%%%%9"); 
                         Set<NamedObjectId> valid = new HashSet<>(idList);
                         valid.removeAll(e.getInvalidParameters());
                         idList = new ArrayList<>(valid);
@@ -108,6 +120,7 @@ public class SubscribeParameterObserver implements Observer<SubscribeParametersR
                             log.debug("The invalid IDs are: {}",
                                     StringConverter.idListToString(e.getInvalidParameters()));
                         }
+                        System.out.println("SubscribeParameterObserver%%%%10"); 
                         updateSubscription(action, idList, request.getUpdateOnExpiration());
                     }
                 }
@@ -115,18 +128,25 @@ public class SubscribeParameterObserver implements Observer<SubscribeParametersR
 
             SubscribeParametersData.Builder datab = SubscribeParametersData.newBuilder()
                     .addAllInvalid(invalid);
+            
+            System.out.println("SubscribeParameterObserver%%%%11"); 
 
             Map<NamedObjectId, Integer> mappingUpdate = new HashMap<>(idList.size());
             for (NamedObjectId id : idList) {
+                System.out.println("SubscribeParameterObserver%%%%12"); 
                 int numericId = numericIdGenerator.incrementAndGet();
                 mappingUpdate.put(id, numericId);
                 datab.putMapping(numericId, id);
             }
+            System.out.println("SubscribeParameterObserver%%%%13"); 
             if (subscriptionId != -1 && (!request.hasSendFromCache() || request.getSendFromCache())) {
+                System.out.println("SubscribeParameterObserver%%%%14"); 
                 for (ParameterValueWithId rec : pidrm.getValuesFromCache(subscriptionId)) {
                     ParameterValue pval = rec.getParameterValue();
+                    System.out.println("SubscribeParameterObserver%%%%15"); 
                     Integer numericId = mappingUpdate.get(rec.getId());
                     if (numericId != null) {
+                        System.out.println("SubscribeParameterObserver%%%%16"); 
                         datab.addValues(toGpb(pval, numericId));
                     }
                 }

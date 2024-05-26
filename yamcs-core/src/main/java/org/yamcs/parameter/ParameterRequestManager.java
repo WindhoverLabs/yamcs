@@ -314,21 +314,27 @@ public class ParameterRequestManager {
      */
     public void update(ParameterValueList pvlist) {
         // build the customised lists for the subscribers and send it to them
+//    	System.out.println("pvlist:" + pvlist); 
         HashMap<Integer, ArrayList<ParameterValue>> subscription = new HashMap<>();
+        System.out.println("ParameterRequestManager update pvList1");
         updateSubscription(subscription, pvlist);
 
         for (Map.Entry<Integer, ArrayList<ParameterValue>> entry : subscription.entrySet()) {
             Integer subscriptionId = entry.getKey();
-
+            System.out.println("ParameterRequestManager update pvList2");
             ArrayList<ParameterValue> al = entry.getValue();
             ParameterConsumer consumer = request2ParameterConsumerMap.get(subscriptionId);
             if (consumer == null) {
+            	System.out.println("ParameterRequestManager update pvList3");
                 log.warn("subscriptionId {} appears in the delivery list, but there is no consumer for it",
                         subscriptionId);
             } else {
+            	System.out.println("ParameterRequestManager update pvList4");
                 consumer.updateItems(subscriptionId, al);
             }
         }
+        
+        System.out.println("ParameterRequestManager update pvList5");
     }
 
     /**

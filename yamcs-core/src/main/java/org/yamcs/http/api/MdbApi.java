@@ -865,17 +865,22 @@ public class MdbApi extends AbstractMdbApi<Context> {
 
         // First try with a prefixed slash (should be the common case)
         String namespace = "/" + _namespace;
+        System.out.println("namespace****:" + namespace);
+        System.out.println("name*********:" + name);
+        System.out.println("verifyParameterWithId*****1");
         Parameter p = mdb.getParameter(namespace, name);
         if (p == null) {
             namespace = _namespace;
             // Maybe some non-xtce namespace like MDB:OPS Name
             p = mdb.getParameter(namespace, name);
+            System.out.println("verifyParameterWithId*****2");
         }
 
         if (p != null && !ctx.user.hasObjectPrivilege(ObjectPrivilegeType.ReadParameter, p.getQualifiedName())) {
             throw new ForbiddenException("Insufficient privileges to access parameter " + p.getQualifiedName());
         }
         if (p == null) {
+        	System.out.println("verifyParameterWithId*****3");
             throw new NotFoundException("No parameter named " + pathName);
         }
 

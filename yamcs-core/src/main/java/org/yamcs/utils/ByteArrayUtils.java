@@ -277,6 +277,7 @@ public class ByteArrayUtils {
     }
 
     public static short decodeShort(byte[] a, int offset) {
+    	System.out.println("Call stack:" + Arrays.toString( Thread.currentThread().getStackTrace()));
         int x = ((a[offset] & 0xFF) << 8) +
                 ((a[offset + 1] & 0xFF));
         return (short) x;

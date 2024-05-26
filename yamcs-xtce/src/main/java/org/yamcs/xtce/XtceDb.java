@@ -569,6 +569,8 @@ public class XtceDb implements Serializable {
                 ss = spaceSystems.get(ssname);
             }
             ss.addParameter(p);
+            System.out.println(" XTCE db name-->" + p.getName());
+            System.out.println(" XTCE db qname-->" + p.getQualifiedName());
             parameters.put(p.getQualifiedName(), p);
 
             parameterAliases.add(p);
