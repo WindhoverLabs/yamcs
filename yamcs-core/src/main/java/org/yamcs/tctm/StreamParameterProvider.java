@@ -96,6 +96,8 @@ public class StreamParameterProvider extends AbstractProcessorService implements
         ProcessingData data = ProcessingData.createForTmProcessing(processor.getLastValueCache());
         
         System.out.println("onTuple**1:" + tuple.size());
+        
+        System.out.println("tuple str:" + tuple.toString());
 
         for (int i = 4; i < tuple.size(); i++) {
             Object o = tuple.getColumn(i);

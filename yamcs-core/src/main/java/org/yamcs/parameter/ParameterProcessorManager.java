@@ -267,7 +267,7 @@ public class ParameterProcessorManager extends AbstractService implements Parame
             parameterCache.update(pvlist);
         }
         
-//        System.out.println("process pvlist3:" + pvlist);
+        System.out.println("process pvlist3$$$$$:" + pvlist);
         lastValueCache.addAll(pvlist);
     }
 

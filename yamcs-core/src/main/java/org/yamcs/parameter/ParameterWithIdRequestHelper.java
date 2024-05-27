@@ -71,8 +71,11 @@ public class ParameterWithIdRequestHelper implements ParameterConsumer {
             throws InvalidIdentification, NoPermissionException {
         List<ParameterWithId> plist = checkNames(idList);
         Subscription subscr = new Subscription(checkExpiration);
+        System.out.println("addRequest*****************************1");
         for (int i = 0; i < idList.size(); i++) {
+        	System.out.println("addRequest*****************************2");
             checkParameterPrivilege(user, plist.get(i).p.getQualifiedName());
+            System.out.println("addRequest*****************************3");
             subscr.add(plist.get(i));
         }
         int subscriptionId = prm.addRequest(plist.stream().map(pwid -> pwid.p).collect(Collectors.toList()), this);
@@ -220,15 +223,21 @@ public class ParameterWithIdRequestHelper implements ParameterConsumer {
      */
     public List<ParameterValueWithId> getValuesFromCache(int subscriptionId) {
         Subscription subscr = subscriptions.get(subscriptionId);
+        System.out.println("getValuesFromCache**************1");
         if (subscr == null) {
             log.warn("add item requested for an invalid subscription id {}", subscriptionId);
             throw new InvalidRequestIdentification("Invalid subcription id", subscriptionId);
         }
+        
+        System.out.println("getValuesFromCache**************2");
         long now = prm.processor.getCurrentTime();
-
+        
+        System.out.println("subscr.params.keySet()------------>"+ subscr.params.keySet());
         List<ParameterValue> values = prm.getValuesFromCache(subscr.params.keySet());
         List<ParameterValueWithId> pvlist = new ArrayList<>(values.size());
+        System.out.println("getValuesFromCache**************3");
         for (ParameterValue pv : values) {
+        	System.out.println("getValuesFromCache**************4");
             if (pv.isExpired(now)) {
                 pv = new ParameterValue(pv);
                 pv.setAcquisitionStatus(AcquisitionStatus.EXPIRED);
@@ -241,6 +250,7 @@ public class ParameterWithIdRequestHelper implements ParameterConsumer {
                 log.warn("Received values for a parameter not requested: {}", pv.getParameter());
                 continue;
             }
+            System.out.println("getValuesFromCache**************5");
             addValueForAllIds(pvlist, l, pv);
         }
 

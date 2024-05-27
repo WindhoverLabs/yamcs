@@ -64,8 +64,9 @@ public class SubscribeParameterObserver implements Observer<SubscribeParametersR
             Processor processor = ProcessingApi.verifyProcessor(request.getInstance(), request.getProcessor());
             ParameterRequestManager requestManager = processor.getParameterRequestManager();
             System.out.println("pidrm:" + pidrm);
+            System.out.println("request%%%%%%%%%%%%%%%########1:" + request.getIdList());
             pidrm = new ParameterWithIdRequestHelper(requestManager, (subscriptionId, params) -> {
-            	System.out.println("subscriptionId:" + subscriptionId);
+            	System.out.println("subscriptionId^^^^^^^^^^^^^^^^^^:" + subscriptionId);
                 if (params.isEmpty()) {
                     return;
                 }
@@ -79,6 +80,7 @@ public class SubscribeParameterObserver implements Observer<SubscribeParametersR
                 }
                 responseObserver.next(datab.build());
             });
+            System.out.println("request%%%%%%%%%%%%%%%########2:" + request.getIdList());
         }
         
         System.out.println("SubscribeParameterObserver%%%%4"); 
@@ -140,13 +142,15 @@ public class SubscribeParameterObserver implements Observer<SubscribeParametersR
             }
             System.out.println("SubscribeParameterObserver%%%%13"); 
             if (subscriptionId != -1 && (!request.hasSendFromCache() || request.getSendFromCache())) {
-                System.out.println("SubscribeParameterObserver%%%%14"); 
+                System.out.println("SubscribeParameterObserver%%%%14:" + subscriptionId);
+                System.out.println("SubscribeParameterObserver%%%%15:" + pidrm.getValuesFromCache(subscriptionId)); 
                 for (ParameterValueWithId rec : pidrm.getValuesFromCache(subscriptionId)) {
                     ParameterValue pval = rec.getParameterValue();
-                    System.out.println("SubscribeParameterObserver%%%%15"); 
+                    System.out.println("SubscribeParameterObserver%%%%16"); 
                     Integer numericId = mappingUpdate.get(rec.getId());
+                    System.out.println("SubscribeParameterObserver%%%%17 -->numericId:" + numericId);
                     if (numericId != null) {
-                        System.out.println("SubscribeParameterObserver%%%%16"); 
+                        System.out.println("SubscribeParameterObserver%%%%18:" + pval); 
                         datab.addValues(toGpb(pval, numericId));
                     }
                 }
@@ -175,43 +179,61 @@ public class SubscribeParameterObserver implements Observer<SubscribeParametersR
                 subscriptionId = -1;
             }
             subscriptionId = pidrm.addRequest(idList, updateOnExpiration, user);
+            System.out.println("updateSubscription***************************1:" + subscriptionId);
         } else if (action == Action.ADD) {
             if (subscriptionId == -1) {
                 subscriptionId = pidrm.addRequest(idList, updateOnExpiration, user);
+                System.out.println("updateSubscription***************************2");
             } else {
                 pidrm.addItemsToRequest(subscriptionId, idList, user);
+                System.out.println("updateSubscription***************************3");
             }
         } else if (action == Action.REMOVE) {
             if (subscriptionId != -1) {
                 pidrm.removeItemsFromRequest(subscriptionId, idList, user);
+                System.out.println("updateSubscription***************************4");
             }
         }
     }
 
     private org.yamcs.protobuf.Pvalue.ParameterValue toGpb(ParameterValue pval, int numericId) {
+    	System.out.println("toGpb**************1");
         var gpb = pval.toGpb(numericId);
         if (maxBytes >= 0) {
+        	System.out.println("toGpb**************2");
             var hasRawBinaryValue = gpb.hasRawValue() && gpb.getRawValue().hasBinaryValue();
             var hasEngBinaryValue = gpb.hasEngValue() && gpb.getEngValue().hasBinaryValue();
             if (hasRawBinaryValue || hasEngBinaryValue) {
+            	System.out.println("toGpb**************3");
                 var truncated = org.yamcs.protobuf.Pvalue.ParameterValue.newBuilder(gpb);
+                System.out.println("toGpb**************4");
                 if (hasRawBinaryValue) {
+                	System.out.println("toGpb**************5");
                     var binaryValue = gpb.getRawValue().getBinaryValue();
+                    System.out.println("toGpb**************6");
                     if (binaryValue.size() > maxBytes) {
+                    	System.out.println("toGpb**************7");
                         truncated.getRawValueBuilder().setBinaryValue(
                                 binaryValue.substring(0, maxBytes));
                     }
+                	System.out.println("toGpb**************8");
                 }
                 if (hasEngBinaryValue) {
+                	System.out.println("toGpb**************9");
                     var binaryValue = gpb.getEngValue().getBinaryValue();
+                	System.out.println("toGpb**************10");
                     if (binaryValue.size() > maxBytes) {
+                    	System.out.println("toGpb**************11");
                         truncated.getEngValueBuilder().setBinaryValue(
                                 binaryValue.substring(0, maxBytes));
                     }
                 }
+            	System.out.println("toGpb**************12");
                 return truncated.build();
             }
+        	System.out.println("toGpb**************13");
         }
+    	System.out.println("toGpb**************14");
         return gpb;
     }
 
