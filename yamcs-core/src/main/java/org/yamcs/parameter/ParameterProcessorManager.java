@@ -210,7 +210,7 @@ public class ParameterProcessorManager extends AbstractService implements Parame
 
     public void process(ProcessingData processingData) {
         ParameterValueList pvlist = processingData.getTmParams();
-//        System.out.println("process pvlist1:" + pvlist);
+        System.out.println("process pvlist1:" + pvlist);
         log.trace("Received TM data with {} parameters", pvlist.size);
         if (alarmChecker != null) {
             alarmChecker.performAlarmChecking(processingData, pvlist.iterator());
@@ -221,10 +221,14 @@ public class ParameterProcessorManager extends AbstractService implements Parame
 //        System.out.println("process pvlist2:" + pvlist);
 
         for (ParameterValue pv : pvlist) {
+          System.out.println("process pv loop1:" + pv);
             BitSet bitset1 = param2SubscriptionMap.get(pv.getParameter());
             if (bitset1 != null) {
+            	System.out.println("process pv loop2:" + pv);
                 bitset.or(bitset1);
             }
+            
+            System.out.println("process pv loop3:" + pv);
         }
         // at this point bitset contains all the subscriptions with parameters from the original delivery.
         // as we run the delivery through the processors, new parameters may be created and so new subscriptions might
@@ -235,11 +239,13 @@ public class ParameterProcessorManager extends AbstractService implements Parame
         boolean finished = false;
         int loopCount = 1;
         while (!finished) {
+            System.out.println("process pv while1:");
             finished = true;
             Iterator<ParameterValue> tailIt = pvlist.tailIterator();
 
             for (int id = bitset.nextSetBit(0); id != -1; id = bitset.nextSetBit(id + 1)) {
                 finished = false;
+                System.out.println("process pv while2 id:" + id);
                 sendToProcessor(parameterProcessors[id], processingData);
             }
 
@@ -247,8 +253,14 @@ public class ParameterProcessorManager extends AbstractService implements Parame
             BitSet bitset1 = new BitSet();
             while (tailIt.hasNext()) {
                 ParameterValue pv = tailIt.next();
+                System.out.println("process pv while3 pv:" + pv);
+                
+                System.out.println("process pv while3 map:" + param2SubscriptionMap);
+
+
                 BitSet bitset2 = param2SubscriptionMap.get(pv.getParameter());
                 if (bitset2 != null) {
+                    System.out.println("process pv while4 pv:" + pv + "map:" + param2SubscriptionMap);
                     bitset1.or(bitset2);
                 }
             }
@@ -264,6 +276,7 @@ public class ParameterProcessorManager extends AbstractService implements Parame
         prm.update(pvlist);
 
         if (parameterCache != null) {
+        	System.out.println("parameterCache:-->" + parameterCache);
             parameterCache.update(pvlist);
         }
         

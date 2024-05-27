@@ -316,7 +316,7 @@ public class ParameterRequestManager {
         // build the customised lists for the subscribers and send it to them
 //    	System.out.println("pvlist:" + pvlist); 
         HashMap<Integer, ArrayList<ParameterValue>> subscription = new HashMap<>();
-        System.out.println("ParameterRequestManager update pvList1");
+        System.out.println("ParameterRequestManager update pvList1:" +  pvlist);
         updateSubscription(subscription, pvlist);
 
         for (Map.Entry<Integer, ArrayList<ParameterValue>> entry : subscription.entrySet()) {
@@ -345,42 +345,59 @@ public class ParameterRequestManager {
      */
     private void updateSubscription(HashMap<Integer, ArrayList<ParameterValue>> subscription,
             Collection<ParameterValue> currentDelivery) {
+    	System.out.println("updateSubscription##############1");
         if (currentDelivery == null) {
             return;
         }
+        
+        System.out.println("updateSubscription##############2:" + subscription);
+        System.out.println("updateSubscription##############2:" + currentDelivery);
 
         for (Iterator<ParameterValue> it = currentDelivery.iterator(); it.hasNext();) {
             ParameterValue pv = it.next();
+            System.out.println("updateSubscription##############3: param2RequestMap" + param2RequestMap + "pv:" + pv);
             Parameter pDef = pv.getParameter();
             SubscriptionArray cowal = param2RequestMap.get(pDef);
+            System.out.println("cowal:" + cowal + "for pv:" + pv);
             // now walk through the requests and add this item to their delivery list
             if (cowal == null) {
+                System.out.println("updateSubscription##############4");
                 continue;
             }
+            
+            System.out.println("updateSubscription##############5");
 
             for (int s : cowal.getArray()) {
+            	System.out.println("updateSubscription##############6");
                 ArrayList<ParameterValue> al = subscription.get(s);
                 if (al == null) {
+                	System.out.println("updateSubscription##############7");
                     al = new ArrayList<>();
                     subscription.put(s, al);
                 }
+                System.out.println("updateSubscription##############8");
                 al.add(pv);
             }
         }
 
         // update the subscribeAll subscriptions
         for (int id : subscribeAllConsumers.getArray()) {
+        	System.out.println("updateSubscription##############9");
             ArrayList<ParameterValue> al = subscription.get(id);
 
             if (al == null) {
                 al = new ArrayList<>();
+                System.out.println("updateSubscription##############10");
                 subscription.put(id, al);
             }
 
             for (ParameterValue pv : currentDelivery) {
+            	System.out.println("updateSubscription##############11");
                 al.add(pv);
             }
         }
+        
+        System.out.println("updateSubscription##############12");
     }
 
     @Override

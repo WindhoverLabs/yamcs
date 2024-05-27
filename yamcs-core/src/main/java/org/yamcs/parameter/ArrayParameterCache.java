@@ -43,28 +43,38 @@ public class ArrayParameterCache implements ParameterCache {
 
     @Override
     public void update(Collection<ParameterValue> pvs) {
+    	System.out.println("update array param cache pvs##########1:" + pvs);
         Map<Long, SortedParameterList> m = new HashMap<>();
         for (ParameterValue pv : pvs) {
             long t = pv.getGenerationTime();
+            System.out.println("update array param cache pvs##########2:" + pvs);
             if (t < cacheStartTime) {
                 continue;
             }
+            System.out.println("update array param cache pvs##########3:" + pvs);
             if (!(cacheConfig.cacheAll || parametersToCache.containsKey(pv.getParameter()))) {
                 continue;
             }
             SortedParameterList l = m.get(t);
+            System.out.println("update array param cache pvs##########4:" + pvs);
             if (l == null) {
                 l = new SortedParameterList(pidMap);
+                System.out.println("update array param cache pvs##########5:" + pvs);
                 m.put(t, l);
             }
+            System.out.println("update array param cache pvs##########6:" + pvs);
             l.add(pv);
         }
         long maxTimestamp = -1;
         for (Map.Entry<Long, SortedParameterList> entry : m.entrySet()) {
+            System.out.println("update array param cache pvs##########7:" + pvs);
+
             long t = entry.getKey();
+            System.out.println("update array param cache pvs##########8:" + pvs);
             SortedParameterList pvList = entry.getValue();
             addToCache(t, pvList);
             if (t > maxTimestamp) {
+                System.out.println("update array param cache pvs##########9:" + pvs);
                 maxTimestamp = t;
             }
         }
@@ -73,15 +83,22 @@ public class ArrayParameterCache implements ParameterCache {
     private void addToCache(long t, SortedParameterList pvList) {
         SortedIntArray sia = pvList.getParameterIdArray();
         ParameterValueTable table = tables.get(sia);
+        System.out.println("addToCache##########1:" );
         if (table == null) {
+        	System.out.println("addToCache##########2:" );
             table = new ParameterValueTable(sia, cacheConfig.maxDuration, cacheConfig.maxNumEntries);
+            System.out.println("addToCache##########3:" );
             ParameterValueTable table1 = tables.putIfAbsent(sia, table);
             if (table1 != null) {
+            	System.out.println("addToCache##########4:" );
                 table = table1;
             }
+            System.out.println("addToCache##########5:" );
         }
-
+        System.out.println("addToCache##########6:" );
         table.add(t, pvList.getParameterValueList());
+        System.out.println("addToCache##########7:" + pvList.getParameterValueList() );
+
     }
 
     @Override

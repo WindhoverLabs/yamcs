@@ -149,6 +149,7 @@ public class StreamParameterProvider extends AbstractProcessorService implements
             System.out.println("StreamParameterProvider PV:" + pv);
             data.addTmParam(pv);
         }
+        System.out.println("onTuple data------>" + data);
         ppm.process(data);
     }
 
