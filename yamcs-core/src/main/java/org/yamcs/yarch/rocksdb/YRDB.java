@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.rocksdb.AbstractWalFilter;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ColumnFamilyOptions;
@@ -22,6 +23,8 @@ import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.Snapshot;
+import org.rocksdb.WALRecoveryMode;
+import org.rocksdb.WalProcessingOption;
 import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
 import org.yamcs.utils.ByteArrayWrapper;
@@ -86,6 +89,8 @@ public class YRDB {
         Options opt = (tc == null) ? rdbConfig.getDefaultOptions() : tc.getOptions();
         dbOptions = (tc == null) ? rdbConfig.getDefaultDBOptions() : tc.getDBOptions();
         this.path = dir;
+        
+//        RocksDB.
         File current = new File(dir + File.separatorChar + "CURRENT");
         if (current.exists()) {
             List<byte[]> cfl = RocksDB.listColumnFamilies(opt, dir);
@@ -97,6 +102,49 @@ public class YRDB {
                     cfdList.add(new ColumnFamilyDescriptor(b, cfoptions));
                 }
                 List<ColumnFamilyHandle> cfhList = new ArrayList<>(cfl.size());
+//                dbOptions.setWalFilter(null)
+                System.out.println("dbOptions-->" + dbOptions.walFilter());
+                System.out.println("walRecoveryMode-->" + dbOptions.walRecoveryMode());
+                dbOptions.setWalRecoveryMode(WALRecoveryMode.SkipAnyCorruptedRecords);
+                dbOptions.setWalFilter(new AbstractWalFilter() {
+
+					@Override
+					public void columnFamilyLogNumberMap(Map<Integer, Long> cfLognumber,
+							Map<String, Integer> cfNameId) {
+						// TODO Auto-generated method stub
+						
+					}
+
+					@Override
+					public LogRecordFoundResult logRecordFound(long logNumber, String logFileName, WriteBatch batch,
+							WriteBatch newBatch) {
+						// TODO Auto-generated method stub
+//						System.out.println("logRecordFound***********");
+						try {
+//							System.out.println("batch:"+ org.yamcs.utils.StringConverter.arrayToHexString(batch.data(), true)  );
+//							System.out.println("batch:"+ batch.getDataSize()  );
+
+						} catch (Exception e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						try {
+//							System.out.println("WriteBatch:"+ org.yamcs.utils.StringConverter.arrayToHexString(newBatch.data()));
+//							System.out.println("WriteBatch:"+ newBatch.getDataSize() );
+
+						} catch (Exception e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						return new LogRecordFoundResult(WalProcessingOption.CONTINUE_PROCESSING, false);
+//						return null;
+					}
+
+					@Override
+					public String name() {
+						// TODO Auto-generated method stub
+						return "newWalFilter";
+					}});
                 db = RocksDB.open(dbOptions, dir, cfdList, cfhList);
                 for (int i = 0; i < cfl.size(); i++) {
                     byte[] b = cfl.get(i);
