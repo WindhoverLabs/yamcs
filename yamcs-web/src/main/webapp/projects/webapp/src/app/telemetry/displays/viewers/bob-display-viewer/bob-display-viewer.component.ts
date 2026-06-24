@@ -184,10 +184,63 @@ export class BobDisplayViewerComponent implements Viewer, OnDestroy {
       this.openDisplay(linkedFile, widget.data('target-' + index), event);
       return;
     }
+    const script = widget.data('script-' + index);
+    if (script) {
+      this.runScript(String(script), widget);
+      return;
+    }
     const linkedUrl = widget.data('linked-url-' + index);
     if (linkedUrl) {
       window.open(linkedUrl, '_blank');
     }
+  }
+
+  /**
+   * Run an embedded-JS action script with a Yamcs shim. Displays author command
+   * buttons as JavaScript calling `Yamcs.issueCommand(widget, name, args)`
+   * (plus Phoebus `importPackage(...)` boilerplate). We provide that `Yamcs`
+   * object, the `widget`, and no-op stubs for the Java-interop globals, then
+   * evaluate the script. Only EmbeddedJs is supported (no Python/Java).
+   */
+  private runScript(script: string, widget: any) {
+    const Yamcs = {
+      issueCommand: (_widget: any, qualifiedName: string, args?: any) =>
+        this.issueCommand(qualifiedName, args),
+    };
+    // Self-returning proxy so `com.x.y`, `Packages.org.x`, and calls all no-op.
+    const pkg: any = new Proxy(function () {}, {
+      get: () => pkg,
+      apply: () => pkg,
+    });
+    const importPackage = () => {};
+    try {
+      // eslint-disable-next-line no-new-func
+      new Function(
+        'Yamcs',
+        'widget',
+        'importPackage',
+        'Packages',
+        'com',
+        'org',
+        'java',
+        'javax',
+        script,
+      )(Yamcs, widget, importPackage, pkg, pkg, pkg, pkg, pkg);
+    } catch (err: any) {
+      this.messageService.showError(err);
+    }
+  }
+
+  /** Issue a Yamcs command (the `Yamcs.issueCommand` shim target). */
+  private issueCommand(qualifiedName: string, args?: { [key: string]: any }) {
+    this.yamcs
+      .yamcsClient!.issueCommand(
+        this.yamcs.instance!,
+        this.yamcs.processor!,
+        qualifiedName,
+        { args },
+      )
+      .catch((err: any) => this.messageService.showError(err));
   }
 
   /** Navigate to another display (.bob or .opi) within the displays UI. */
