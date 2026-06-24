@@ -17,6 +17,7 @@ import {
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { Viewer } from '../viewers/Viewer';
+import { BobDisplayViewerComponent } from '../viewers/bob-display-viewer/bob-display-viewer.component';
 import { ImageViewerComponent } from '../viewers/image-viewer/image-viewer.component';
 import { OpiDisplayViewerControlsComponent } from '../viewers/opi-display-viewer-controls/opi-display-viewer-controls.component';
 import { OpiDisplayViewerComponent } from '../viewers/opi-display-viewer/opi-display-viewer.component';
@@ -32,6 +33,7 @@ import { ViewerHostDirective } from './viewer-host.directive';
   templateUrl: './display-file.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    BobDisplayViewerComponent,
     ImageViewerComponent,
     OpiDisplayViewerComponent,
     OpiDisplayViewerControlsComponent,
@@ -139,6 +141,8 @@ export class DisplayFileComponent implements AfterViewInit, OnDestroy {
       );
       controls.init(opiDisplayViewer as OpiDisplayViewerComponent);
       this.viewer = opiDisplayViewer;
+    } else if (this.filename.toLowerCase().endsWith('.bob')) {
+      this.viewer = this.createViewer(BobDisplayViewerComponent);
     } else if (this.filename.toLowerCase().endsWith('.par')) {
       const parameterTableViewer = this.createViewer(
         ParameterTableViewerComponent,
