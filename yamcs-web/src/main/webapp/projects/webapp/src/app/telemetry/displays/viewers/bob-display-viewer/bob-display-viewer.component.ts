@@ -256,7 +256,7 @@ export class BobDisplayViewerComponent implements Viewer, OnDestroy {
       .split('/')
       .map((s) => encodeURIComponent(s))
       .join('/');
-    const c = encodeURIComponent(this.yamcs.context);
+    const c = encodeURIComponent(this.yamcs.context ?? '');
     const path = `/telemetry/displays/files/${encoded}?c=${c}`;
 
     if (target === 'tab' || target === 'window' || event?.ctrlKey) {
