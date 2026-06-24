@@ -15,6 +15,7 @@ import {
   YamcsService,
   utils,
 } from '@yamcs/webapp-sdk';
+import { Router } from '@angular/router';
 import { Viewer } from '../Viewer';
 import { loadDbwrAssets } from './dbwr-assets';
 
@@ -27,6 +28,8 @@ declare global {
     PVWS: any;
     dbwr: any;
     jQuery: any;
+    // dbwr's global action handler; we override it to route within the SPA.
+    __handleAction: (widget: any, index: number, event: any) => void;
   }
 }
 
@@ -90,6 +93,7 @@ export class BobDisplayViewerComponent implements Viewer, OnDestroy {
     private yamcs: YamcsService,
     private configService: ConfigService,
     private messageService: MessageService,
+    private router: Router,
   ) {
     this.bucket = configService.getDisplayBucket();
   }
@@ -121,6 +125,12 @@ export class BobDisplayViewerComponent implements Viewer, OnDestroy {
       // widget initialization, which subscribes the PVs.
       this.runtime = new DisplayBuilderWebRuntime(null);
       window.dbwr = this.runtime;
+
+      // Route open-display / write actions through Angular instead of dbwr's
+      // default full-page `?display=` reload.
+      window.__handleAction = (widget, index, event) =>
+        this.handleAction(widget, index, event);
+
       this.runtime.pvws.open();
     } catch (err: any) {
       this.messageService.showError(err);
@@ -151,10 +161,74 @@ export class BobDisplayViewerComponent implements Viewer, OnDestroy {
         self.removePv(pvName);
       }
       write(pvName: string, value: any) {
-        // Write-back / commanding is Phase 3.
-        console.warn(`[bob] write to ${pvName} (${value}) not yet supported`);
+        self.writePv(pvName, value);
       }
     };
+  }
+
+  /**
+   * Replacement for dbwr's global `__handleAction`. dbwr's version navigates by
+   * reloading `?display=`, which doesn't fit an SPA; we route via the Angular
+   * router (which re-selects the OPI/BOB viewer by extension) and handle
+   * write-PV / open-URL inline.
+   */
+  private handleAction(widget: any, index: number, event: any) {
+    const pv = widget.data('pv-' + index);
+    const val = widget.data('value-' + index);
+    if (pv !== undefined && val !== undefined) {
+      this.writePv(pv, val);
+      return;
+    }
+    const linkedFile = widget.data('linked-file-' + index);
+    if (linkedFile) {
+      this.openDisplay(linkedFile, widget.data('target-' + index), event);
+      return;
+    }
+    const linkedUrl = widget.data('linked-url-' + index);
+    if (linkedUrl) {
+      window.open(linkedUrl, '_blank');
+    }
+  }
+
+  /** Navigate to another display (.bob or .opi) within the displays UI. */
+  private openDisplay(linkedFile: string, target: string, event: any) {
+    // linkedFile is a synthetic file://<bucket>/<objectPath> URL.
+    let objectPath: string;
+    try {
+      objectPath = new URL(linkedFile).pathname.replace(/^\//, '');
+    } catch {
+      objectPath = linkedFile.replace(/^file:\/\/[^/]*\//, '');
+    }
+    const encoded = objectPath
+      .split('/')
+      .map((s) => encodeURIComponent(s))
+      .join('/');
+    const c = encodeURIComponent(this.yamcs.context);
+    const path = `/telemetry/displays/files/${encoded}?c=${c}`;
+
+    if (target === 'tab' || target === 'window' || event?.ctrlKey) {
+      const baseHref = this.yamcs.yamcsClient!.baseHref;
+      window.open(`${baseHref}telemetry/displays/files/${encoded}?c=${c}`, '_blank');
+    } else {
+      this.router.navigateByUrl(path);
+    }
+  }
+
+  /** Write a value to a settable Yamcs parameter (e.g. local/software PV). */
+  private writePv(pvName: string, raw: any) {
+    const num = Number(raw);
+    const value =
+      raw !== '' && raw !== null && !isNaN(num)
+        ? { type: 'DOUBLE', doubleValue: num }
+        : { type: 'STRING', stringValue: String(raw) };
+    this.yamcs
+      .yamcsClient!.setParameterValue(
+        this.yamcs.instance!,
+        this.yamcs.processor!,
+        pvName,
+        value as any,
+      )
+      .catch((err: any) => this.messageService.showError(err));
   }
 
   private addPv(pvName: string) {
