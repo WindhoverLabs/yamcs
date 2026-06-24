@@ -15,9 +15,13 @@ import {
   YamcsService,
   utils,
 } from '@yamcs/webapp-sdk';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Viewer } from '../Viewer';
 import { loadDbwrAssets } from './dbwr-assets';
+
+// Query-param prefix for display macros, matching the OPI viewer (e.g.
+// `?args.CPUID=ppd`). Used to carry macros across open-display navigation.
+const ARGS_PREFIX = 'args.';
 
 // Globals provided by the vendored dbwr client runtime, loaded as scripts from
 // the yamcs-bob-plugin (/bob/static/...). `PVWS` is the PV-source contract dbwr
@@ -85,6 +89,11 @@ export class BobDisplayViewerComponent implements Viewer, OnDestroy {
   // names and (re)create the subscription on the next tick.
   private subscription?: ParameterSubscription;
   private pvNames = new Set<string>();
+  // Phoebus `loc://` local PVs are client-side scratch variables (e.g. a combo
+  // writes the selected value, a script reads it). They never reach Yamcs; we
+  // hold their values here and feed dbwr directly. Keyed by the full PV string
+  // (as dbwr subscribes/writes it), matching dbwr's own pv_infos keying.
+  private localPvs = new Map<string, any>();
   private flushTimer?: ReturnType<typeof setTimeout>;
   private idMapping: { [numericId: number]: NamedObjectId } = {};
   private idInfo: { [numericId: number]: any } = {};
@@ -94,8 +103,21 @@ export class BobDisplayViewerComponent implements Viewer, OnDestroy {
     private configService: ConfigService,
     private messageService: MessageService,
     private router: Router,
+    private route: ActivatedRoute,
   ) {
     this.bucket = configService.getDisplayBucket();
+  }
+
+  /** Read display macros passed as `?args.<NAME>=<value>` query params. */
+  private macrosFromRoute(): { [key: string]: string } {
+    const macros: { [key: string]: string } = {};
+    const queryParams = this.route.snapshot.queryParams;
+    for (const param in queryParams) {
+      if (param.startsWith(ARGS_PREFIX)) {
+        macros[param.substring(ARGS_PREFIX.length)] = queryParams[param];
+      }
+    }
+    return macros;
   }
 
   async init(objectName: string): Promise<any> {
@@ -110,10 +132,16 @@ export class BobDisplayViewerComponent implements Viewer, OnDestroy {
       // 2. Install the PV bridge dbwr will instantiate as `new PVWS(...)`.
       this.installPvBridge();
 
-      // 3. Fetch the server-rendered HTML fragment and inject it.
-      const url =
+      // 3. Fetch the server-rendered HTML fragment and inject it. Macros passed
+      // via `?args.<NAME>=<value>` (e.g. from open-display navigation) are
+      // forwarded so the rendered display resolves $(NAME) references.
+      let url =
         `${bobBase}/render?bucket=${encodeURIComponent(this.bucket)}` +
         `&object=${encodeURIComponent(objectName)}`;
+      const macros = this.macrosFromRoute();
+      if (Object.keys(macros).length) {
+        url += `&macros=${encodeURIComponent(JSON.stringify(macros))}`;
+      }
       const response = await fetchFn(url);
       if (!response.ok) {
         throw new Error(`Render failed (${response.status})`);
@@ -181,7 +209,12 @@ export class BobDisplayViewerComponent implements Viewer, OnDestroy {
     }
     const linkedFile = widget.data('linked-file-' + index);
     if (linkedFile) {
-      this.openDisplay(linkedFile, widget.data('target-' + index), event);
+      this.openDisplay(
+        linkedFile,
+        widget.data('target-' + index),
+        this.parseMacros(widget.data('linked-macros-' + index)),
+        event,
+      );
       return;
     }
     const script = widget.data('script-' + index);
@@ -196,17 +229,22 @@ export class BobDisplayViewerComponent implements Viewer, OnDestroy {
   }
 
   /**
-   * Run an embedded-JS action script with a Yamcs shim. Displays author command
-   * buttons as JavaScript calling `Yamcs.issueCommand(widget, name, args)`
-   * (plus Phoebus `importPackage(...)` boilerplate). We provide that `Yamcs`
-   * object, the `widget`, and no-op stubs for the Java-interop globals, then
-   * evaluate the script. Only EmbeddedJs is supported (no Python/Java).
+   * Run an action script (EmbeddedJs, or an external *.js inlined by the
+   * plugin) with a Yamcs/Phoebus shim. Displays author command buttons as
+   * JavaScript calling `Yamcs.issueCommand(widget, name, args)`, and the richer
+   * scripts also use Phoebus' `PVUtil`, `ScriptUtil` and
+   * `widget.getEffectiveMacros()` (plus `importPackage(...)` boilerplate). We
+   * provide those, no-op stubs for the Java-interop globals, then evaluate the
+   * script. JavaScript only (no Python/Java).
    */
   private runScript(script: string, widget: any) {
     const Yamcs = {
       issueCommand: (_widget: any, qualifiedName: string, args?: any) =>
         this.issueCommand(qualifiedName, args),
     };
+    const PVUtil = this.createPvUtil();
+    const ScriptUtil = this.createScriptUtil();
+    const scriptWidget = this.wrapWidget(widget);
     // Self-returning proxy so `com.x.y`, `Packages.org.x`, and calls all no-op.
     const pkg: any = new Proxy(function () {}, {
       get: () => pkg,
@@ -218,6 +256,8 @@ export class BobDisplayViewerComponent implements Viewer, OnDestroy {
       new Function(
         'Yamcs',
         'widget',
+        'PVUtil',
+        'ScriptUtil',
         'importPackage',
         'Packages',
         'com',
@@ -225,10 +265,83 @@ export class BobDisplayViewerComponent implements Viewer, OnDestroy {
         'java',
         'javax',
         script,
-      )(Yamcs, widget, importPackage, pkg, pkg, pkg, pkg, pkg);
+      )(Yamcs, scriptWidget, PVUtil, ScriptUtil, importPackage, pkg, pkg, pkg, pkg, pkg);
     } catch (err: any) {
       this.messageService.showError(err);
     }
+  }
+
+  /**
+   * Attach `getEffectiveMacros()` to a dbwr (jQuery) widget so scripts can call
+   * `widget.getEffectiveMacros().getValue(name)`, backed by the `data-macros`
+   * JSON the plugin emits for script-bearing widgets.
+   */
+  private wrapWidget(widget: any): any {
+    if (widget && !widget.getEffectiveMacros) {
+      widget.getEffectiveMacros = () => {
+        const macros = widget.data('macros') || {};
+        return {
+          getValue: (name: string) => {
+            const v = macros[name];
+            return v === undefined ? null : v;
+          },
+        };
+      };
+    }
+    return widget;
+  }
+
+  /**
+   * Phoebus `PVUtil` shim: read the current value of a PV from dbwr's cache
+   * (`dbwr.pv_infos[name].data`, the last update we delivered).
+   */
+  private createPvUtil(): any {
+    const dataOf = (pv: any) => {
+      const name = pv && pv.name !== undefined ? pv.name : pv;
+      return window.dbwr?.pv_infos?.[name]?.data;
+    };
+    return {
+      getString: (pv: any) => {
+        const d = dataOf(pv);
+        if (!d) return '';
+        if (d.text !== undefined && d.text !== null) return String(d.text);
+        return d.value === undefined || d.value === null ? '' : String(d.value);
+      },
+      getDouble: (pv: any) => {
+        const d = dataOf(pv);
+        return d ? Number(d.value) : NaN;
+      },
+      getLong: (pv: any) => {
+        const d = dataOf(pv);
+        return d ? Math.trunc(Number(d.value)) : 0;
+      },
+      getInt: (pv: any) => {
+        const d = dataOf(pv);
+        return d ? Math.trunc(Number(d.value)) : 0;
+      },
+    };
+  }
+
+  /**
+   * Phoebus `ScriptUtil` shim: find a widget in the display by its name and get
+   * a widget's primary PV (the `data-pv` the plugin emits).
+   */
+  private createScriptUtil(): any {
+    const self = this;
+    return {
+      findWidgetByName: (_widget: any, name: string) => {
+        const match = window
+          .jQuery(self.content.nativeElement)
+          .find('[data-name]')
+          .filter((_: number, el: any) => el.getAttribute('data-name') === name)
+          .first();
+        return match.length ? self.wrapWidget(match) : null;
+      },
+      getPrimaryPV: (widget: any) => {
+        const name = widget ? widget.data('pv') : undefined;
+        return name ? { name } : null;
+      },
+    };
   }
 
   /** Issue a Yamcs command (the `Yamcs.issueCommand` shim target). */
@@ -243,32 +356,67 @@ export class BobDisplayViewerComponent implements Viewer, OnDestroy {
       .catch((err: any) => this.messageService.showError(err));
   }
 
+  /**
+   * Normalize a `data-linked-macros-*` value to a plain object. jQuery's
+   * `.data()` usually JSON-parses it, but fall back to parsing a raw string and
+   * ignore anything that isn't an object (so we never iterate a string's chars).
+   */
+  private parseMacros(raw: any): { [key: string]: string } | undefined {
+    let macros = raw;
+    if (typeof macros === 'string') {
+      try {
+        macros = JSON.parse(macros);
+      } catch {
+        return undefined;
+      }
+    }
+    return macros && typeof macros === 'object' ? macros : undefined;
+  }
+
   /** Navigate to another display (.bob or .opi) within the displays UI. */
-  private openDisplay(linkedFile: string, target: string, event: any) {
-    // linkedFile is a synthetic file://<bucket>/<objectPath> URL.
+  private openDisplay(
+    linkedFile: string,
+    target: string,
+    macros: { [key: string]: string } | undefined,
+    event: any,
+  ) {
+    // linkedFile is a synthetic <scheme>://<bucket>/<objectPath> URL.
     let objectPath: string;
     try {
       objectPath = new URL(linkedFile).pathname.replace(/^\//, '');
     } catch {
-      objectPath = linkedFile.replace(/^file:\/\/[^/]*\//, '');
+      objectPath = linkedFile.replace(/^[a-z]+:\/\/[^/]*\//, '');
     }
     const encoded = objectPath
       .split('/')
       .map((s) => encodeURIComponent(s))
       .join('/');
     const c = encodeURIComponent(this.yamcs.context ?? '');
-    const path = `/telemetry/displays/files/${encoded}?c=${c}`;
+    // Forward macros as ?args.<NAME>=<value> so the target display resolves
+    // $(NAME) references (matches the OPI viewer convention).
+    let qs = `?c=${c}`;
+    if (macros) {
+      for (const k in macros) {
+        qs += `&${ARGS_PREFIX}${encodeURIComponent(k)}=${encodeURIComponent(macros[k])}`;
+      }
+    }
+    const relative = `/telemetry/displays/files/${encoded}${qs}`;
 
     if (target === 'tab' || target === 'window' || event?.ctrlKey) {
       const baseHref = this.yamcs.yamcsClient!.baseHref;
-      window.open(`${baseHref}telemetry/displays/files/${encoded}?c=${c}`, '_blank');
+      window.open(`${baseHref}telemetry/displays/files/${encoded}${qs}`, '_blank');
     } else {
-      this.router.navigateByUrl(path);
+      this.router.navigateByUrl(relative);
     }
   }
 
-  /** Write a value to a settable Yamcs parameter (e.g. local/software PV). */
+  /** Write a value to a PV: local `loc://` scratch variable, or Yamcs parameter. */
   private writePv(pvName: string, raw: any) {
+    if (this.isLocalPv(pvName)) {
+      this.localPvs.set(pvName, raw);
+      this.deliverLocal(pvName, raw);
+      return;
+    }
     const num = Number(raw);
     const value =
       raw !== '' && raw !== null && !isNaN(num)
@@ -285,6 +433,15 @@ export class BobDisplayViewerComponent implements Viewer, OnDestroy {
   }
 
   private addPv(pvName: string) {
+    if (this.isLocalPv(pvName)) {
+      if (!this.localPvs.has(pvName)) {
+        this.localPvs.set(pvName, this.parseLocalInitial(pvName));
+      }
+      // Deliver the current value once the subscriber has finished registering.
+      const value = this.localPvs.get(pvName);
+      setTimeout(() => this.deliverLocal(pvName, value), 0);
+      return;
+    }
     if (!this.pvNames.has(pvName)) {
       this.pvNames.add(pvName);
       this.scheduleResubscribe();
@@ -292,9 +449,59 @@ export class BobDisplayViewerComponent implements Viewer, OnDestroy {
   }
 
   private removePv(pvName: string) {
+    if (this.isLocalPv(pvName)) {
+      return; // Keep the value so a later re-subscribe still sees it.
+    }
     if (this.pvNames.delete(pvName)) {
       this.scheduleResubscribe();
     }
+  }
+
+  private isLocalPv(pvName: string): boolean {
+    return pvName.startsWith('loc://');
+  }
+
+  /**
+   * Parse the initial value from a `loc://name<VType>(initial)` spec. Returns a
+   * number when the initial looks numeric, the string otherwise, or `''` when
+   * no initial is given. For `VEnum`-style option lists the first token (the
+   * index/initial) is used.
+   */
+  private parseLocalInitial(pvName: string): any {
+    const m = /^loc:\/\/[^(]*\((.*)\)\s*$/.exec(pvName);
+    if (!m) {
+      return '';
+    }
+    const init = m[1].trim();
+    const firstComma = init.indexOf(',');
+    let first = firstComma >= 0 ? init.substring(0, firstComma).trim() : init;
+    if (first.startsWith('"') && first.endsWith('"')) {
+      return first.slice(1, -1);
+    }
+    const num = Number(first);
+    return first !== '' && !isNaN(num) ? num : first;
+  }
+
+  /** Push a local-PV value to dbwr as an update message. */
+  private deliverLocal(pvName: string, value: any) {
+    if (!this.onMessage) {
+      return;
+    }
+    const message: any = {
+      type: 'update',
+      pv: pvName,
+      severity: 'NONE',
+      readonly: false,
+    };
+    const num = Number(value);
+    if (value !== '' && value !== null && value !== undefined && !isNaN(num)) {
+      message.value = num;
+    } else {
+      const text = value === null || value === undefined ? '' : String(value);
+      message.value = text;
+      message.text = text;
+    }
+    this.onMessage(message);
   }
 
   private scheduleResubscribe() {
